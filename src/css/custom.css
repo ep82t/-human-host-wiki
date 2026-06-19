@@ -1,0 +1,29 @@
+:root {
+  --ifm-color-primary: #25636f;
+  --ifm-color-primary-dark: #205965;
+  --ifm-color-primary-darker: #1e535f;
+  --ifm-color-primary-darkest: #19454e;
+  --ifm-color-primary-light: #2a6d7a;
+  --ifm-color-primary-lighter: #2c7381;
+  --ifm-color-primary-lightest: #328292;
+}
+
+.markdown table {
+  display: table;
+  width: 100%;
+}
+
+.status-confirmed {
+  color: #1f7a3a;
+  font-weight: 700;
+}
+
+.status-unconfirmed {
+  color: #9a6700;
+  font-weight: 700;
+}
+
+.status-development {
+  color: #8a4baf;
+  font-weight: 700;
+}

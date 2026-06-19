@@ -1,0 +1,17 @@
+# Human Host crafting recipe data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - status
+    - source
+    - verified_date
+    - output
+    - materials
+    - workstation
+    - use_case
+    - priority
+    - notes
+
+recipes: []

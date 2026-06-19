@@ -1,0 +1,16 @@
+# Human Host vehicle data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - status
+    - source
+    - verified_date
+    - acquisition_method
+    - fuel
+    - repair
+    - use_case
+    - notes
+
+vehicles: []

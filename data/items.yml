@@ -1,0 +1,17 @@
+# Human Host item data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - category
+    - status
+    - source
+    - verified_date
+    - acquisition_methods
+    - uses
+    - crafting_materials
+    - related_recipes
+    - notes
+
+items: []

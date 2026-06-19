@@ -1,0 +1,17 @@
+# Unconfirmed information tracking.
+unconfirmed:
+  - id: trader-system
+    title: Trader System
+    category: system
+    status: in-development
+    source: developer-info
+    recorded_date: null
+    verification_needed:
+      - 実装後の正式仕様
+      - 出現場所
+      - 取引品
+      - 通貨または交換条件
+    related_pages:
+      - /trader-system/
+    notes:
+      - 開発中情報として扱う。

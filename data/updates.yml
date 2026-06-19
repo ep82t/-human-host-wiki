@@ -1,0 +1,17 @@
+# Human Host update log data.
+schema:
+  fields:
+    - id
+    - date
+    - title
+    - status
+    - source
+    - summary
+    - added
+    - changed
+    - fixed
+    - removed_or_disabled
+    - affected_pages
+    - verification_needed
+
+updates: []

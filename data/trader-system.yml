@@ -1,0 +1,22 @@
+# Trader System tracking data.
+trader_system:
+  id: trader-system
+  name_ja: Trader System
+  name_en: Trader System
+  status: in-development
+  completion: approximately 70%
+  source: developer-info
+  verified_date: null
+  implemented: false
+  notes:
+    - 7 Days to DieのTraderに近いNPCシステムとされている。
+    - 実装済みとして扱わない。
+  check_after_implementation:
+    - spawn_locations
+    - trade_items
+    - currency_or_exchange_conditions
+    - quest_or_request_system
+    - reputation_system
+    - inventory_refresh
+    - relation_to_bases
+    - relation_to_enemies

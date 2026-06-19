@@ -1,0 +1,32 @@
+# Japanese and English terminology.
+terms:
+  - id: human-host
+    ja: Human Host
+    en: Human Host
+    status: confirmed
+    notes: ゲーム名。
+  - id: trader-system
+    ja: Trader System
+    en: Trader System
+    status: in-development
+    notes: 開発中のNPC取引システム。
+
+status_labels:
+  confirmed:
+    ja: 確認済み
+    en: Confirmed
+  unconfirmed:
+    ja: 未確認
+    en: Unconfirmed
+  in-development:
+    ja: 開発中
+    en: In development
+  planned:
+    ja: 実装予定
+    en: Planned
+  subject-to-change:
+    ja: 変更可能性あり
+    en: Subject to change
+  unknown:
+    ja: 不明
+    en: Unknown

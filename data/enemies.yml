@@ -1,0 +1,17 @@
+# Human Host enemy data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - status
+    - source
+    - verified_date
+    - spawn_locations
+    - behavior
+    - danger_level
+    - drops
+    - countermeasures
+    - notes
+
+enemies: []

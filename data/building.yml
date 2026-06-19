@@ -1,0 +1,17 @@
+# Human Host building data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - category
+    - status
+    - source
+    - verified_date
+    - materials
+    - use_case
+    - base_building_notes
+    - screenshots
+    - notes
+
+building: []

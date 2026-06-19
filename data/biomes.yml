@@ -1,0 +1,17 @@
+# Human Host biome data.
+# Add only confirmed or clearly marked unconfirmed entries.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - status
+    - source
+    - verified_date
+    - main_resources
+    - enemies
+    - exploration_notes
+    - base_building_notes
+    - screenshots
+
+biomes: []

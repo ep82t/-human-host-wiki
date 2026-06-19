@@ -1,0 +1,23 @@
+{
+  "name": "human-host-wiki",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal Human Host wiki built with Docusaurus, Markdown, and YAML.",
+  "scripts": {
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear"
+  },
+  "dependencies": {
+    "@docusaurus/core": "latest",
+    "@docusaurus/preset-classic": "latest",
+    "prism-react-renderer": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0"
+  }
+}

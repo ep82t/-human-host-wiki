@@ -1,0 +1,16 @@
+# Human Host resource data.
+schema:
+  fields:
+    - id
+    - name_ja
+    - name_en
+    - status
+    - source
+    - verified_date
+    - acquisition_methods
+    - locations
+    - uses
+    - related_recipes
+    - notes
+
+resources: []
