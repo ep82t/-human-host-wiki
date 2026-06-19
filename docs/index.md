@@ -44,6 +44,11 @@ slug: /
     <strong>クラフト</strong>
     <span>レシピ、必要素材、作業台、優先度。</span>
   </a>
+  <a className="hh-card" href="/settings/hotkeys/">
+    <span className="hh-card-kicker">Controls</span>
+    <strong>ホットキー</strong>
+    <span>移動、使用、マップ、バックパックなどの操作。</span>
+  </a>
   <a className="hh-card" href="/building/">
     <span className="hh-card-kicker">Base</span>
     <strong>建築</strong>

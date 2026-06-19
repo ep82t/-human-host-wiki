@@ -13,7 +13,16 @@ const sidebars = {
         'getting-started/early-game',
         'getting-started/screen-guide',
         'getting-started/food-water-medicine',
-        'getting-started/first-resources'
+        'getting-started/first-resources',
+        'settings/hotkeys'
+      ]
+    },
+    {
+      type: 'category',
+      label: 'ゲーム設定',
+      items: [
+        'settings/index',
+        'settings/hotkeys'
       ]
     },
     {

@@ -1,0 +1,94 @@
+metadata:
+  game: Human Host
+  category: settings_hotkeys
+  language: ja
+  status_policy:
+    confirmed: "スクリーンショットで確認できた項目"
+    unconfirmed: "スクリーンショット外、または読み取り不明の項目"
+  screenshots:
+    - /images/screenshots/settings/hotkeys-01.png
+    - /images/screenshots/settings/hotkeys-02.png
+    - /images/screenshots/settings/hotkeys-03.png
+
+mouse:
+  - name: マウス感度
+    value: "100%"
+    status: 確認済み
+  - name: スコープ感度
+    value: "300%"
+    status: 確認済み
+  - name: マウスY軸反転
+    value: "オフに見える"
+    status: 確認済み
+
+hotkeys:
+  - section: インターフェース操作
+    entries:
+      - action: バックパック
+        key: B
+        status: 確認済み
+      - action: マップ
+        key: Tab
+        status: 確認済み
+      - action: 特性
+        key: V
+        status: 確認済み
+      - action: 手作り
+        key: F1
+        status: 確認済み
+      - action: Shift + クリック アイテム
+        key: LeftShift
+        status: 確認済み
+  - section: キャラクターインタラクション
+    entries:
+      - action: 使用
+        key: F
+        status: 確認済み
+      - action: リロード
+        key: R
+        status: 確認済み
+      - action: フラッシュライト
+        key: E
+        status: 確認済み
+      - action: Qメニュー
+        key: Q
+        status: 確認済み
+      - action: アイテムをドロップ
+        key: G
+        status: 確認済み
+      - action: 視点切り替え
+        key: H
+        status: 確認済み
+  - section: キャラクターアクション
+    entries:
+      - action: ダッシュ
+        key: LeftShift
+        status: 確認済み
+      - action: ジャンプ
+        key: Space
+        status: 確認済み
+      - action: クラウチ
+        key: LeftControl
+        status: 確認済み
+      - action: 押し続けてしゃがむ
+        key: C
+        status: 確認済み
+  - section: キャラクター移動
+    entries:
+      - action: 前
+        key: W
+        status: 確認済み
+      - action: 後
+        key: S
+        status: 確認済み
+      - action: 左
+        key: A
+        status: 確認済み
+      - action: 右
+        key: D
+        status: 確認済み
+
+notes:
+  - "画面右下に「すべての設定はゲーム開始後に有効になります。」と表示。"
+  - "スクリーンショットに写っていない項目は未記録。"
+  - "初期設定か変更後設定かは、必要に応じて後で確認する。"
