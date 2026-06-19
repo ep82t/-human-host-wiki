@@ -1,0 +1,174 @@
+metadata:
+  game: Human Host
+  category: new_game_settings
+  language: ja
+  source_status:
+    official_steam_page: "ゲーム全体の仕様確認に使用"
+    screenshots: "項目名と設定値の確認に使用"
+    tooltip_descriptions: "未取得。後で追加予定"
+  screenshots:
+    - /images/screenshots/new-game/new-game-menu.png
+    - /images/screenshots/new-game/save-slot-select.png
+    - /images/screenshots/new-game/world-settings-01.png
+    - /images/screenshots/new-game/world-settings-02.png
+    - /images/screenshots/new-game/world-settings-03.png
+
+flow:
+  - step: メニューからニューゲームを選ぶ
+    status: 確認済み
+  - step: 空のセーブスロットを選ぶ
+    status: 確認済み
+  - step: ワールド設定を確認する
+    status: 確認済み
+  - step: 次へ進む
+    status: 確認済み
+
+save_slots:
+  - name: 自動保存
+    value: A
+    status: 確認済み
+  - name: スロット1
+    value: "保存データあり"
+    status: 確認済み
+  - name: スロット2
+    value: 空
+    status: 確認済み
+  - name: スロット3
+    value: 空
+    status: 確認済み
+  - name: スロット4
+    value: 空
+    status: 確認済み
+  - name: スロット5
+    value: 空
+    status: 確認済み
+
+settings:
+  - section: 難易度
+    entries:
+      - name: 難易度プリセット
+        value: ノーマル
+        explanation: 複数の設定をまとめて標準的な難易度にするプリセットと思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: 戦利品パラメータ
+    entries:
+      - name: 戦利品スポーン
+        value: "100%"
+        explanation: 探索で見つかる戦利品の出現量に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 戦利品リスポーン間隔
+        value: 5d
+        explanation: 一度回収した戦利品が再出現するまでの間隔と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: プレイヤーパラメータ
+    entries:
+      - name: 死亡時ドロップ
+        value: すべて
+        explanation: 死亡時に落とすアイテム範囲を決める設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: プレイヤーXP
+        value: "100%"
+        explanation: 経験値の獲得量に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: ゾンビ移動パラメータ
+    entries:
+      - name: ゾンビ走行モード
+        value: 夜間のみ走行
+        explanation: 夜だけ走る標準設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: ゾンビ激怒
+        value: 無効化
+        explanation: ゾンビの一時的な強化や行動変化に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: ゾンビ狂乱
+        value: 無効化
+        explanation: ゾンビのより危険な行動変化に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: ゾンビ強化パラメータ
+    entries:
+      - name: ゾンビの生物へのダメージ
+        value: "100%"
+        explanation: プレイヤーや生物に対するゾンビの攻撃力に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: ゾンビのブロックへのダメージ
+        value: "100%"
+        explanation: 建築物やブロックへのゾンビの破壊力に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: ゾンビ突然変異レベル
+        value: "100%"
+        explanation: ゾンビの変異や強化度合いに関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: ゾンビスポーンパラメータ
+    entries:
+      - name: ゾンビリスポーン間隔
+        value: 70h
+        explanation: ゾンビが再出現するまでの時間に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 屋外ゾンビ数
+        value: "100%"
+        explanation: 屋外に出現するゾンビ数に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 屋内ゾンビ数
+        value: "100%"
+        explanation: 建物内などに出現するゾンビ数に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: 群集パラメータ
+    entries:
+      - name: 群集リスポーン間隔
+        value: "100%"
+        explanation: 群れの再出現頻度に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 群集ゾンビ数
+        value: "100%"
+        explanation: 群れとして出現するゾンビ数に関係する設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: ワールドパラメータ
+    entries:
+      - name: ワールドシード
+        value: "714673577"
+        explanation: ランダム生成ワールドの生成結果を決める数値と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 昼夜サイクルの長さ
+        value: 60m
+        explanation: 1日の長さを決める設定と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 昼の長さ
+        value: "50%"
+        explanation: 1日のうち昼として扱われる割合と思われる
+        status: 確認済み
+        explanation_status: 推定
+  - section: 屍体パラメータ
+    entries:
+      - name: 最大屍体数
+        value: "50"
+        explanation: 同時に残る屍体数の上限と思われる
+        status: 確認済み
+        explanation_status: 推定
+      - name: 屍体消滅時間
+        value: 3d
+        explanation: 屍体が消えるまでの時間と思われる
+        status: 確認済み
+        explanation_status: 推定
+
+todo:
+  - 各項目のツールチップ説明文を追加する
+  - プリセット変更時の値の変化を確認する
+  - 初心者向けおすすめ設定を作る

@@ -19,6 +19,11 @@ slug: /
     <strong>序盤の進め方</strong>
     <span>最初に何をするか、何を確認するか。</span>
   </a>
+  <a className="hh-card" href="/settings/new-game/">
+    <span className="hh-card-kicker">New Game</span>
+    <strong>ニューゲーム設定</strong>
+    <span>難易度、戦利品、ゾンビ、ワールド設定。</span>
+  </a>
   <a className="hh-card" href="/getting-started/food-water-medicine/">
     <span className="hh-card-kicker">Survival</span>
     <strong>食料・水・医薬品</strong>

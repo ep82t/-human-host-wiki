@@ -22,6 +22,7 @@ const sidebars = {
       label: 'ゲーム設定',
       items: [
         'settings/index',
+        'settings/new-game',
         'settings/hotkeys'
       ]
     },
