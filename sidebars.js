@@ -7,7 +7,18 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'サバイバル情報',
+      label: '初心者ガイド',
+      items: [
+        'getting-started/index',
+        'getting-started/early-game',
+        'getting-started/screen-guide',
+        'getting-started/food-water-medicine',
+        'getting-started/first-resources'
+      ]
+    },
+    {
+      type: 'category',
+      label: 'データ',
       items: [
         {
           type: 'category',
