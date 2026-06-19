@@ -26,7 +26,38 @@ const sidebars = {
             'biomes/snowy-mountain'
           ]
         },
-        'resources/index',
+        {
+          type: 'category',
+          label: '資源',
+          items: [
+            'resources/index',
+            'resources/clay',
+            'resources/sand',
+            'resources/copper-ore',
+            'resources/marble',
+            'resources/iron-ore',
+            'resources/epidote',
+            'resources/sulfur',
+            'resources/nitrate-ore',
+            'resources/yellow-wax-stone',
+            'resources/graphite-ore',
+            'resources/lapis-lazuli',
+            'resources/titanium-ore',
+            'resources/chromium-ore',
+            'resources/tungsten-ore',
+            'resources/obsidian',
+            'resources/lime',
+            'resources/pinecone',
+            'resources/mushroom',
+            'resources/rebar',
+            'resources/scrap-iron',
+            'resources/cement',
+            'resources/log',
+            'resources/charcoal',
+            'resources/cactus',
+            'resources/plant-fiber'
+          ]
+        },
         'items/index',
         'crafting/index',
         'building/index'
