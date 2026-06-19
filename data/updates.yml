@@ -14,4 +14,27 @@ schema:
     - affected_pages
     - verification_needed
 
-updates: []
+updates:
+  - id: steam-source-pass-2026-06-20
+    date: 2026-06-20
+    title: Steam出典を使った初期Wiki整理
+    status: wiki-maintenance
+    source: steam-store-and-steam-community-guides
+    summary: Steam公式ストアとSteamコミュニティガイドをもとに、バイオーム、資源、クラフト、建築、敵、車両の初期ページを整理。
+    added:
+      - バイオーム10種
+      - 資源一覧
+      - クラフト調査カテゴリ
+      - 建築・敵・車両の調査ページ
+    changed: []
+    fixed: []
+    removed_or_disabled: []
+    affected_pages:
+      - /biomes/
+      - /resources/
+      - /crafting/
+      - /building/
+      - /enemies/
+      - /vehicles/
+    verification_needed:
+      - すべてゲーム内確認待ち

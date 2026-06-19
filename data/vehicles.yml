@@ -13,4 +13,21 @@ schema:
     - use_case
     - notes
 
+vehicle_systems:
+  - id: vehicle-assembly
+    name_ja: 車両組立
+    status: official-mentioned
+    source: official-steam-store
+    notes: 建築素材を組み合わせて車両を作れると説明あり。詳細は未確認。
+  - id: mobile-fortress
+    name_ja: 移動拠点
+    status: official-mentioned
+    source: official-steam-store
+    notes: mobile fortresses として公式説明に登場。
+  - id: lua-control
+    name_ja: Lua制御
+    status: official-mentioned
+    source: official-steam-store
+    notes: 車両制御にLuaスクリプトを使えると説明あり。詳細は未確認。
+
 vehicles: []

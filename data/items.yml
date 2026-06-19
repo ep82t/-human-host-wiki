@@ -9,9 +9,118 @@ schema:
     - source
     - verified_date
     - acquisition_methods
+    - locations
     - uses
-    - crafting_materials
-    - related_recipes
     - notes
 
-items: []
+items:
+  - id: magnet
+    name_ja: 磁石
+    name_en: Magnet
+    category: mechanical-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [戦域・廃墟, 荒廃地・廃墟]
+    uses: []
+    notes: 固有アイテム候補。
+  - id: bearing
+    name_ja: ベアリング
+    name_en: Bearing
+    category: mechanical-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [戦域・廃墟, 荒廃地・廃墟]
+    uses: []
+    notes: 固有アイテム候補。
+  - id: pulley
+    name_ja: 滑車
+    name_en: Pulley
+    category: mechanical-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [戦域・廃墟, 荒廃地・廃墟]
+    uses: []
+    notes: 固有アイテム候補。
+  - id: solar-panel
+    name_ja: ソーラーパネル
+    name_en: Solar Panel
+    category: power-equipment
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [砂漠, 峡谷]
+    uses: []
+    notes: 電力系設備候補。
+  - id: high-energy-laser-emitter
+    name_ja: 高エネルギー激光発射器
+    name_en: High-Energy Laser Emitter
+    category: device-or-weapon
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [砂漠, 峡谷]
+    uses: []
+    notes: 表記と用途はゲーム内確認待ち。
+  - id: circular-saw
+    name_ja: 丸鋸
+    name_en: Circular Saw
+    category: tool-or-machine
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [砂漠, 峡谷]
+    uses: []
+    notes: 採取、加工、罠との関係を確認する。
+  - id: clap-on-light
+    name_ja: 拍手ライト
+    name_en: Clap-on light
+    category: electronic-equipment
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [雪原地帯, 雪山]
+    uses: []
+    notes: 日本語表記は確認待ち。
+  - id: chip
+    name_ja: チップ
+    name_en: Chip
+    category: electronic-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [雪原地帯, 雪山]
+    uses: []
+    notes: 電子部品候補。
+  - id: circuit-board
+    name_ja: 基板
+    name_en: Circuit Board
+    category: electronic-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [雪原地帯, 雪山]
+    uses: []
+    notes: 電子部品候補。
+  - id: rechargeable-battery
+    name_ja: 充電式電池
+    name_en: Rechargeable Battery
+    category: power-part
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [雪原地帯, 雪山]
+    uses: []
+    notes: 電力・車両・設備との関係を確認する。

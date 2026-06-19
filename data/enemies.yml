@@ -14,4 +14,21 @@ schema:
     - countermeasures
     - notes
 
+enemy_categories:
+  - id: zombies
+    name_ja: ゾンビ
+    status: official-mentioned
+    source: official-steam-store
+    notes: ゲームの基本敵として公式説明に登場。
+  - id: night-hordes
+    name_ja: 夜の群れ
+    status: official-mentioned
+    source: official-steam-store
+    notes: 夜に速く走る群れとして公式説明に登場。詳細は未確認。
+  - id: bosses
+    name_ja: ボス
+    status: official-mentioned
+    source: official-steam-store
+    notes: ボスに言及あり。個別名や条件は未確認。
+
 enemies: []

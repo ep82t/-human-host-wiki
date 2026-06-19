@@ -1,5 +1,51 @@
 # Unconfirmed information tracking.
 unconfirmed:
+  - id: biome-resources
+    title: バイオーム別資源
+    category: biome-resource
+    status: unconfirmed
+    source: steam-community-guide
+    recorded_date: 2026-06-20
+    verification_needed:
+      - ゲーム内で資源を採取できるか
+      - 表層資源と岩盤層資源の違い
+      - 採取量
+    related_pages:
+      - /biomes/
+      - /resources/
+    notes:
+      - Steamコミュニティガイド由来。
+  - id: crafting-system
+    title: 素材加工・クラフト
+    category: crafting
+    status: unconfirmed
+    source: research-needed
+    recorded_date: 2026-06-20
+    verification_needed:
+      - 作業台
+      - レシピ
+      - 必要素材
+      - 加工量
+    related_pages:
+      - /crafting/
+    notes:
+      - 具体的なレシピ表は未発見。
+  - id: vehicle-assembly
+    title: 車両組立
+    category: vehicles
+    status: unconfirmed
+    source: official-steam-store-and-steam-community-guides
+    recorded_date: 2026-06-20
+    verification_needed:
+      - 基本部品
+      - 燃料
+      - 修理
+      - Lua制御
+    related_pages:
+      - /vehicles/
+      - /crafting/vehicle-assembly/
+    notes:
+      - 公式ストアで車両組立に言及あり。
   - id: trader-system
     title: Trader System
     category: system

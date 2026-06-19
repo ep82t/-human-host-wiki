@@ -10,8 +10,33 @@ schema:
     - verified_date
     - materials
     - use_case
-    - base_building_notes
-    - screenshots
     - notes
+
+building_categories:
+  - id: basic-blocks
+    name_ja: 基本ブロック
+    status: unconfirmed
+    source: research-needed
+    notes: 壁、床、屋根など。具体的な種類は未確認。
+  - id: defenses
+    name_ja: 防衛設備
+    status: unconfirmed
+    source: official-steam-store
+    notes: 公式ストアで罠に言及あり。具体的な種類は未確認。
+  - id: storage
+    name_ja: 収納
+    status: unconfirmed
+    source: research-needed
+    notes: 容量や設置条件は未確認。
+  - id: production
+    name_ja: 生産設備
+    status: unconfirmed
+    source: research-needed
+    notes: 作業台、炉、電力設備などの有無を確認する。
+  - id: mobile-base
+    name_ja: 移動拠点
+    status: unconfirmed
+    source: official-steam-store
+    notes: 公式ストアで移動拠点作成に言及あり。
 
 building: []
