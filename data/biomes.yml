@@ -12,6 +12,8 @@ schema:
     - enemies
     - exploration_notes
     - base_building_notes
+    - vehicle_notes
     - screenshots
+    - unknowns
 
 biomes: []
