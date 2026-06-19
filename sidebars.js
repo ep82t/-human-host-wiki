@@ -9,7 +9,23 @@ const sidebars = {
       type: 'category',
       label: 'サバイバル情報',
       items: [
-        'biomes/index',
+        {
+          type: 'category',
+          label: 'バイオーム',
+          items: [
+            'biomes/index',
+            'biomes/mountain',
+            'biomes/forest',
+            'biomes/warzone-ruins',
+            'biomes/wasteland-ruins',
+            'biomes/desert',
+            'biomes/canyon',
+            'biomes/rainforest',
+            'biomes/swamp',
+            'biomes/snowland',
+            'biomes/snowy-mountain'
+          ]
+        },
         'resources/index',
         'items/index',
         'crafting/index',
