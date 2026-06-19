@@ -59,7 +59,17 @@ const sidebars = {
           ]
         },
         'items/index',
-        'crafting/index',
+        {
+          type: 'category',
+          label: 'クラフト',
+          items: [
+            'crafting/index',
+            'crafting/material-processing',
+            'crafting/building-crafting',
+            'crafting/vehicle-assembly',
+            'crafting/trap-crafting'
+          ]
+        },
         'building/index'
       ]
     },

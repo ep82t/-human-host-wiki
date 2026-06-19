@@ -4,6 +4,7 @@ schema:
     - id
     - name_ja
     - name_en
+    - category
     - status
     - source
     - verified_date
@@ -13,5 +14,53 @@ schema:
     - use_case
     - priority
     - notes
+
+crafting_categories:
+  - id: material-processing
+    name_ja: 素材加工
+    name_en: Material Processing
+    status: unconfirmed
+    source: research-needed
+    notes: 資源を別素材へ変換するクラフト。作業台や変換量は未確認。
+  - id: building-crafting
+    name_ja: 建築クラフト
+    name_en: Building Crafting
+    status: unconfirmed
+    source: official-steam-store
+    notes: 公式ストアで建築自由度に言及あり。具体的レシピは未確認。
+  - id: vehicle-assembly
+    name_ja: 車両組立
+    name_en: Vehicle Assembly
+    status: unconfirmed
+    source: official-steam-store-and-steam-community-guide
+    notes: 公式ストアとSteamコミュニティガイドで車両組立に関する情報あり。
+  - id: weapon-crafting
+    name_ja: 武器クラフト
+    name_en: Weapon Crafting
+    status: unconfirmed
+    source: research-needed
+    notes: 武器や弾薬の作成方法は未確認。
+  - id: trap-crafting
+    name_ja: 罠クラフト
+    name_en: Trap Crafting
+    status: unconfirmed
+    source: official-steam-store
+    notes: 公式ストアで多様な罠に言及あり。具体的レシピは未確認。
+  - id: electronics-crafting
+    name_ja: 電子部品クラフト
+    name_en: Electronics Crafting
+    status: unconfirmed
+    source: steam-community-guide
+    notes: チップ、基板、充電式電池などがバイオーム固有アイテム候補として確認されている。
+
+known_related_guides:
+  - id: vehicle-assembly-basic
+    title_ja: 乗り物組立ガイド（初級編）
+    url: https://steamcommunity.com/sharedfiles/filedetails/?id=3732507858
+    status: unconfirmed
+  - id: flexible-rotor-notes
+    title_ja: フレキシブルローター考察
+    url: https://steamcommunity.com/sharedfiles/filedetails/?id=3734326900
+    status: unconfirmed
 
 recipes: []
