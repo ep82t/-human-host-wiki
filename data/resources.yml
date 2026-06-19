@@ -4,6 +4,7 @@ schema:
     - id
     - name_ja
     - name_en
+    - category
     - status
     - source
     - verified_date
@@ -13,4 +14,304 @@ schema:
     - related_recipes
     - notes
 
-resources: []
+resources:
+  - id: clay
+    name_ja: 粘土
+    name_en: Clay
+    category: surface-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [山地, 森林, 戦域・廃墟, 荒廃地・廃墟, 熱帯雨林, 沼地, 雪原地帯, 雪山]
+    uses: []
+    related_recipes: []
+    notes: 多くのバイオームの表層資源。
+  - id: sand
+    name_ja: 砂
+    name_en: Sand
+    category: surface-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [砂漠, 峡谷]
+    uses: []
+    related_recipes: []
+    notes: 砂漠と峡谷の表層資源。
+  - id: copper-ore
+    name_ja: 銅鉱石
+    name_en: Copper Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [山地, 森林]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: marble
+    name_ja: 大理石
+    name_en: Marble
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [山地, 森林]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: iron-ore
+    name_ja: 鉄鉱石
+    name_en: Iron Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [戦域・廃墟]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: epidote
+    name_ja: りょくれんせき
+    name_en: Epidote
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [戦域・廃墟, 荒廃地・廃墟]
+    uses: []
+    related_recipes: []
+    notes: 日本語表記はゲーム内確認待ち。
+  - id: sulfur
+    name_ja: 硫黄
+    name_en: Sulfur
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [荒廃地・廃墟]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: nitrate-ore
+    name_ja: 硝酸塩鉱石
+    name_en: Nitrate Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [砂漠, 峡谷]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: yellow-wax-stone
+    name_ja: おうろう石
+    name_en: Yellow Wax Stone
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [砂漠, 峡谷]
+    uses: []
+    related_recipes: []
+    notes: 日本語表記はゲーム内確認待ち。
+  - id: graphite-ore
+    name_ja: 石墨鉱石
+    name_en: Graphite Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [熱帯雨林]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: lapis-lazuli
+    name_ja: ラピスラズリ
+    name_en: Lapis Lazuli
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [熱帯雨林, 沼地]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: titanium-ore
+    name_ja: チタン鉱石
+    name_en: Titanium Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [沼地]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: chromium-ore
+    name_ja: クロム鉱石
+    name_en: Chromium Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [雪原地帯]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: tungsten-ore
+    name_ja: タングステン鉱石
+    name_en: Tungsten Ore
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [雪山]
+    uses: []
+    related_recipes: []
+    notes: 後半寄り資源候補。
+  - id: obsidian
+    name_ja: 黒曜石
+    name_en: Obsidian
+    category: bedrock-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採掘]
+    locations: [雪原地帯, 雪山]
+    uses: []
+    related_recipes: []
+    notes: 岩盤層資源。
+  - id: lime
+    name_ja: 石灰
+    name_en: Lime
+    category: resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [未確認]
+    locations: [森林, 戦域・廃墟]
+    uses: []
+    related_recipes: []
+    notes: その他資源。
+  - id: pinecone
+    name_ja: 松ぼっくり
+    name_en: Pinecone
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採取]
+    locations: [山地]
+    uses: []
+    related_recipes: []
+    notes: 特徴的なもの。
+  - id: mushroom
+    name_ja: キノコ
+    name_en: Mushroom
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採取]
+    locations: [森林]
+    uses: []
+    related_recipes: []
+    notes: 特徴的なもの。
+  - id: rebar
+    name_ja: 鉄筋
+    name_en: Rebar
+    category: salvage-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [ガレキ破壊]
+    locations: [戦域・廃墟]
+    uses: []
+    related_recipes: []
+    notes: ガレキ由来の可能性。
+  - id: scrap-iron
+    name_ja: 廃鉄
+    name_en: Scrap Iron
+    category: salvage-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [ガレキ破壊]
+    locations: [戦域・廃墟]
+    uses: []
+    related_recipes: []
+    notes: ガレキ由来の可能性。
+  - id: cement
+    name_ja: 水泥
+    name_en: Cement
+    category: salvage-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [ガレキ破壊]
+    locations: [戦域・廃墟]
+    uses: []
+    related_recipes: []
+    notes: セメント表記も要確認。
+  - id: log
+    name_ja: 原木
+    name_en: Log
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採取]
+    locations: [荒廃地・廃墟, 峡谷]
+    uses: []
+    related_recipes: []
+    notes: 特徴的なもの。
+  - id: charcoal
+    name_ja: 木炭
+    name_en: Charcoal
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採取]
+    locations: [荒廃地・廃墟]
+    uses: []
+    related_recipes: []
+    notes: 特徴的なもの。
+  - id: cactus
+    name_ja: サボテン
+    name_en: Cactus
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [採取]
+    locations: [砂漠, 峡谷]
+    uses: []
+    related_recipes: []
+    notes: 特徴的なもの。
+  - id: plant-fiber
+    name_ja: 植物繊維
+    name_en: Plant Fiber
+    category: natural-resource
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    acquisition_methods: [つる破壊]
+    locations: [熱帯雨林]
+    uses: []
+    related_recipes: []
+    notes: つる破壊で大量入手できる可能性。
