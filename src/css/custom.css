@@ -6,6 +6,10 @@
   --ifm-color-primary-light: #2a6d7a;
   --ifm-color-primary-lighter: #2c7381;
   --ifm-color-primary-lightest: #328292;
+  --hh-surface: #111513;
+  --hh-surface-2: #18201b;
+  --hh-rust: #a15b34;
+  --hh-leaf: #6fa34f;
 }
 
 .markdown table {
@@ -26,4 +30,103 @@
 .status-development {
   color: #8a4baf;
   font-weight: 700;
+}
+
+.hh-hero {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(111, 163, 79, 0.28), transparent 28%),
+    linear-gradient(135deg, #0b0d0c 0%, var(--hh-surface) 55%, #1a120e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin: 0 0 2rem;
+  overflow: hidden;
+  padding: 2.5rem 1.5rem 2rem;
+  text-align: center;
+}
+
+.hh-hero-logo {
+  display: block;
+  margin: 0 auto;
+  max-width: min(520px, 100%);
+  width: 100%;
+}
+
+.hh-hero-subtitle {
+  color: #e8e5dc;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  margin: 1.25rem auto 0;
+  max-width: 680px;
+}
+
+.hh-card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 1rem 0 2rem;
+}
+
+.hh-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f6f7f5 100%);
+  border: 1px solid #d9ded7;
+  border-left: 4px solid var(--hh-leaf);
+  border-radius: 8px;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+  padding: 1rem;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.hh-card:hover {
+  border-color: var(--hh-rust);
+  box-shadow: 0 10px 24px rgba(24, 32, 27, 0.14);
+  color: inherit;
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.hh-card-kicker {
+  color: var(--hh-rust);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.hh-card strong {
+  color: #172018;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.hh-card span:last-child {
+  color: #4b554d;
+  line-height: 1.6;
+}
+
+[data-theme='dark'] .hh-card {
+  background: linear-gradient(180deg, var(--hh-surface-2) 0%, #101411 100%);
+  border-color: #2c372f;
+}
+
+[data-theme='dark'] .hh-card strong {
+  color: #f1efe8;
+}
+
+[data-theme='dark'] .hh-card span:last-child {
+  color: #c9d0c5;
+}
+
+@media (max-width: 640px) {
+  .hh-hero {
+    padding: 1.5rem 1rem;
+  }
+
+  .hh-hero-subtitle {
+    font-size: 0.98rem;
+  }
 }
