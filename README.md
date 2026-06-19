@@ -58,6 +58,9 @@ npm run start
 http://localhost:3000/
 ```
 
+Windowsでは `start-wiki.bat` をダブルクリックして起動することもできます。
+PowerShellで場所を移動する必要がないため、初心者はこちらの方法が簡単です。
+
 公開前のビルド確認をする場合は次を実行します。
 
 ```powershell
