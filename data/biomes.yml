@@ -16,4 +16,256 @@ schema:
     - screenshots
     - unknowns
 
-biomes: []
+biomes:
+  - id: mountain
+    name_ja: 山地
+    name_en: Mountain
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - 銅鉱石
+      - 大理石
+      - 松ぼっくり
+    enemies: []
+    exploration_notes:
+      - 初期スポーン付近の基本資源を集める場所とされる。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - ゲーム内正式名称
+      - 敵の出現
+      - 拠点構築への適性
+
+  - id: forest
+    name_ja: 森林
+    name_en: Forest
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - 銅鉱石
+      - 大理石
+      - キノコ
+      - 石灰
+    enemies: []
+    exploration_notes:
+      - 高層ビル群があるが、ガイド時点では内部に入れない可能性あり。
+    base_building_notes: []
+    vehicle_notes:
+      - 木や茂みが多く、車両移動は難しい可能性あり。
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 建物内部に入れるか
+      - 車両移動の実用性
+
+  - id: warzone-ruins
+    name_ja: 戦域・廃墟
+    name_en: WarZone (Ruins)
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - 鉄鉱石
+      - りょくれん石
+      - ガレキ
+      - 鉄筋
+      - セメント
+      - 廃鉄
+      - 磁石
+      - ベアリング
+      - 滑車
+    enemies: []
+    exploration_notes:
+      - 建築・工業系素材を集めやすい可能性あり。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 敵の出現密度
+      - 建築素材の入手量
+
+  - id: wasteland-ruins
+    name_ja: 荒廃地・廃墟
+    name_en: Wasteland (Ruins)
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - 硫黄
+      - りょくれん石
+      - 原木
+      - 木炭
+      - 磁石
+      - ベアリング
+      - 滑車
+    enemies: []
+    exploration_notes:
+      - 原木・木炭の確認場所候補。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 原木の入手方法
+      - 硫黄の採取方法
+
+  - id: desert
+    name_ja: 砂漠
+    name_en: Desert
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 砂
+      - 硝酸塩鉱石
+      - おうろう石
+      - サボテン
+      - ソーラーパネル
+      - 高エネルギーレーザー発射器
+      - 丸鋸
+    enemies: []
+    exploration_notes:
+      - 砂漠表層と固有アイテムの確認価値が高い。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 固有アイテムの入手方法
+      - 砂漠特有の環境ダメージ
+
+  - id: canyon
+    name_ja: 峡谷
+    name_en: Canyon
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 砂
+      - 硝酸塩鉱石
+      - おうろう石
+      - サボテン
+      - 原木
+      - ソーラーパネル
+      - 高エネルギーレーザー発射器
+      - 丸鋸
+    enemies: []
+    exploration_notes:
+      - 砂漠に近い資源構成とされる。
+      - 原木も確認対象。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 砂漠との差分
+      - 原木の入手条件
+
+  - id: rainforest
+    name_ja: 熱帯雨林
+    name_en: Rainforest
+    status: unconfirmed
+    source: steam-community-guide-and-comments
+    verified_date: null
+    main_resources:
+      - 粘土
+      - 石墨鉱石
+      - ラピスラズリ
+      - つる
+      - 植物繊維
+    enemies: []
+    exploration_notes:
+      - つる破壊で植物繊維を大量入手できる可能性あり。
+      - Redwood報告あり。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - Redwoodの正式な扱い
+      - 植物繊維の入手量
+
+  - id: swamp
+    name_ja: 沼地
+    name_en: Swamp
+    status: unconfirmed
+    source: steam-community-guide-and-comments
+    verified_date: null
+    main_resources:
+      - 粘土
+      - チタン鉱石
+      - ラピスラズリ
+      - 医療品
+      - 抗生物質
+      - メディキット
+      - 鎮痛剤
+    enemies: []
+    exploration_notes:
+      - 医療品系アイテムの報告あり。
+    base_building_notes: []
+    vehicle_notes:
+      - 道路がなく、車両横断は難しい可能性あり。
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 医療品系アイテムの入手方法
+      - 車両移動の可否
+
+  - id: snowland
+    name_ja: 雪原地帯
+    name_en: Snowland
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - クロム鉱石
+      - 黒曜石
+      - 拍手ライト
+      - チップ
+      - 基板
+      - 充電式電池
+    enemies: []
+    exploration_notes:
+      - 電子部品系アイテムの確認場所候補。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - 電子部品系アイテムの入手方法
+      - 寒冷環境の影響
+
+  - id: snowy-mountain
+    name_ja: 雪山
+    name_en: Snowy Mountain
+    status: unconfirmed
+    source: steam-community-guide
+    verified_date: null
+    main_resources:
+      - 粘土
+      - タングステン鉱石
+      - 黒曜石
+      - 拍手ライト
+      - チップ
+      - 基板
+      - 充電式電池
+    enemies: []
+    exploration_notes:
+      - タングステン鉱石を確認する後半寄りのバイオームとされる。
+    base_building_notes: []
+    vehicle_notes: []
+    screenshots:
+      - sources/research/biomes-sheet-2026-06-19.png
+    unknowns:
+      - タングステン鉱石の採取条件
+      - 雪原地帯との差分
