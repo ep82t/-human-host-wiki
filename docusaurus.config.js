@@ -1,15 +1,21 @@
 // @ts-check
 
+const repositoryName = process.env.GITHUB_REPOSITORY
+  ? process.env.GITHUB_REPOSITORY.split('/')[1]
+  : 'human-host-wiki';
+const repositoryOwner = process.env.GITHUB_REPOSITORY_OWNER || 'your-github-name';
+const isGitHubPagesBuild = process.env.GITHUB_ACTIONS === 'true';
+
 const config = {
   title: 'Human Host Wiki',
   tagline: 'Early access survival crafting notes and update tracking',
   favicon: 'img/favicon.ico',
 
-  url: 'https://example.com',
-  baseUrl: '/',
+  url: process.env.SITE_URL || `https://${repositoryOwner}.github.io`,
+  baseUrl: process.env.BASE_URL || (isGitHubPagesBuild ? `/${repositoryName}/` : '/'),
 
-  organizationName: 'your-github-name',
-  projectName: 'human-host-wiki',
+  organizationName: repositoryOwner,
+  projectName: repositoryName,
 
   onBrokenLinks: 'throw',
   markdown: {
