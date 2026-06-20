@@ -5,12 +5,12 @@
 ## こちらで準備済みのこと
 
 - GitHub Pages用の自動公開ワークフローを追加済み。
-- GitHub上では `/human-host-wiki/` でも動くようにDocusaurus設定を調整済み。
+- GitHub上では `/-human-host-wiki/` でも動くようにDocusaurus設定を調整済み。
 - ローカルでは今まで通り `http://127.0.0.1:3000/` で確認できます。
 
 ## GitHub側で必要なこと
 
-1. GitHubで `human-host-wiki` というリポジトリを作る。
+1. GitHubで `-human-host-wiki` というリポジトリを作る。
 2. このプロジェクトをGitHubへアップロードする。
 3. GitHubのリポジトリで `Settings` を開く。
 4. 左側の `Pages` を開く。
@@ -22,7 +22,7 @@
 公開後のURLは通常この形になります。
 
 ```text
-https://GitHubユーザー名.github.io/human-host-wiki/
+https://GitHubユーザー名.github.io/-human-host-wiki/
 ```
 
 ## iPadでできること
