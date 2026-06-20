@@ -3,49 +3,102 @@ title: 序盤の進め方
 slug: /getting-started/early-game/
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 # 序盤の進め方
 
-Human Hostを始めた直後に、まず何を確認するかを整理します。  
-現時点では具体的なゲーム内手順が未確認のため、サバイバルクラフトとしての優先順位をもとにした調査用ガイドです。
+Human Hostには現時点でチュートリアルがないため、最初は「何を作るか」「どこに拠点を作るか」を先に決めると動きやすくなります。
+
+このページでは、ゲーム開始直後に必要になりやすい最低限の流れを整理します。
 
 ## 最初の目標
 
-| 優先度 | やること | 理由 | 状態 |
-| --- | --- | --- | --- |
-| 1 | 周囲の安全確認 | 敵や夜の危険を避けるため | 未確認 |
-| 2 | 食料・水・医薬品の確認 | 生存の基本 | 未確認 |
-| 3 | 基本資源を集める | クラフト・建築の準備 | 未確認 |
-| 4 | 一時拠点を決める | 夜や探索帰りの拠点にする | 未確認 |
-| 5 | 近場のバイオームを把握する | 資源分布を知る | 未確認 |
-| 6 | 車両・移動手段を確認する | 探索範囲を広げる | 未確認 |
+最初に目指すのは、**地下に小さな仮拠点を作ること**です。
 
-## 序盤に集めたい候補
+現状、ゾンビは下方向を掘って壊すことができないため、地下に穴を掘り、入り口を破損の木板でふさいでおくと序盤の安全地帯として使えます。地下には作業台、収納箱、寝袋を置きます。
 
-| 種類 | 候補 | 入手候補 | 状態 |
-| --- | --- | --- | --- |
-| 基本資源 | 粘土 | 多くのバイオーム表層 | 未確認 |
-| 基本資源 | 原木 | 荒廃地・廃墟、峡谷 | 未確認 |
-| 金属系 | 銅鉱石、鉄鉱石 | 山地、森林、戦域・廃墟 | 未確認 |
-| 食料候補 | キノコ | 森林 | 未確認 |
-| 素材候補 | 植物繊維 | 熱帯雨林 | 未確認 |
+## まず必要なもの
 
-## 序盤の注意点
+| 優先度 | 必要なもの | 用途 |
+| --- | --- | --- |
+| 高 | 石の斧 | 木や地形の破壊、基本資源の採取 |
+| 高 | 簡易な石の稿 | 地面を掘って地下拠点を作る |
+| 高 | 寝袋 | 復活地点、または拠点の目印として使う |
+| 高 | 木工作業台 | 序盤クラフトの中心になる作業台 |
 
-- Steam公式ストアでは、夜の群れが速く走ることが示唆されています。
-- 最初は夜間行動を避け、明るいうちに戻れる範囲を探索するのが安全そうです。
-- 車両や移動拠点の要素はありますが、序盤から使えるかは未確認です。
-- Trader Systemは開発中扱いなので、序盤攻略にはまだ組み込みません。
+:::note
+「簡易な石の稿」はゲーム内表記に合わせています。穴を掘るために必要な道具です。
+:::
 
-## 確認したいこと
+## F1で手作りメニューを開く
 
-- 初期スポーン地点のバイオーム
-- 初期所持品
-- 空腹・水分・体力の表示
-- 最初に作れるクラフト
-- 最初に出会う敵
-- 夜になるまでの時間
+F1を押すと「手作り」メニューが開きます。序盤に必要な道具や寝袋、麻ロープなどはここから確認できます。
 
-## 出典
+<a className="hh-wide-shot" href={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} target="_blank" rel="noreferrer">
+  <img src={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} alt="F1で開く手作りメニュー" />
+</a>
 
-- Steam公式ストア: `https://store.steampowered.com/app/2393970/Human_Host/`
-- Steamコミュニティガイド: `https://steamcommunity.com/sharedfiles/filedetails/?id=3729669333`
+## 簡易な石の稿を作る
+
+地下拠点を作るには穴を掘る必要があります。そのため、まず「簡易な石の稿」を作ります。
+
+<div className="hh-two-shot">
+  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} target="_blank" rel="noreferrer">
+    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} alt="簡易な石の稿" />
+  </a>
+  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} target="_blank" rel="noreferrer">
+    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} alt="簡易な石の稿の材料" />
+  </a>
+</div>
+
+| アイテム | 必要素材 |
+| --- | --- |
+| 簡易な石の稿 | 原木 x10、石 x20、麻ロープ x2 |
+
+## 植物繊維を集める
+
+麻ロープを作るには植物繊維が必要です。
+
+草がある場所で、**Ctrlを押してしゃがみ、マウス右ボタンを押しっぱなしにしながら左クリック**すると、植物繊維を採取できます。
+
+<a className="hh-wide-shot" href={useBaseUrl('/images/screenshots/early-game/plant-fiber-tooltip.png')} target="_blank" rel="noreferrer">
+  <img src={useBaseUrl('/images/screenshots/early-game/plant-fiber-tooltip.png')} alt="植物繊維の採取説明" />
+</a>
+
+## 麻ロープを作る
+
+植物繊維を集めたら、麻ロープを作ります。
+
+<a className="hh-wide-shot hh-small-shot" href={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} target="_blank" rel="noreferrer">
+  <img src={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} alt="麻ロープ" />
+</a>
+
+| 完成品 | 必要素材 |
+| --- | --- |
+| 麻ロープ x1 | 植物繊維 x2 |
+
+## 地下仮拠点を作る流れ
+
+1. F1で手作りメニューを開く
+2. 石の斧を用意する
+3. 植物繊維を集める
+4. 麻ロープを作る
+5. 原木、石、麻ロープを集めて簡易な石の稿を作る
+6. 地面を掘って地下スペースを作る
+7. 入り口を破損の木板でふさぐ
+8. 地下に寝袋、収納箱、木工作業台を置く
+
+## 序盤拠点の考え方
+
+| 項目 | 方針 |
+| --- | --- |
+| 場所 | 地下 |
+| 入り口 | 破損の木板でふさぐ |
+| 置くもの | 寝袋、収納箱、木工作業台 |
+| 目的 | 夜やゾンビから身を守り、クラフトと保管の場所にする |
+
+## 注意
+
+- この内容はゲーム内スクリーンショットと実プレイ情報をもとにしています。
+- アップデートでゾンビの破壊挙動やクラフト素材が変わる可能性があります。
+- 現時点では「地下仮拠点」は序盤向けの暫定攻略として扱います。

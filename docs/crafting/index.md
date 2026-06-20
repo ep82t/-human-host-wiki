@@ -3,90 +3,74 @@ title: クラフト一覧
 slug: /crafting/
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 # クラフト一覧
 
-Human Hostのクラフト、組立、作業台、素材変換、建築・車両・罠の作成情報を整理します。  
-現時点では、Steam上で体系的なクラフトレシピ表は未確認です。レシピは捏造せず、確認できたものから追加します。
+Human Hostのクラフト情報を整理するページです。  
+現時点では、ゲーム開始直後に使う「手作り」と、序盤拠点づくりに必要なものを優先してまとめます。
 
-## 調査状況
+## F1で手作りメニューを開く
 
-| 項目 | 状態 | 根拠 |
-| --- | --- | --- |
-| クラフト要素 | あり | Steam公式ストアでサバイバルクラフトゲームとして説明 |
-| 建築 | あり | Steam公式ストアで建築自由度に言及 |
-| 車両組立 | あり | Steam公式ストア、Steamコミュニティガイド |
-| 罠 | あり | Steam公式ストアで多様な罠に言及 |
-| 作業台・設備 | 未確認 | ゲーム内確認待ち |
-| レシピ一覧 | 未確認 | Steam上で体系的な表は未発見 |
+F1を押すと「手作り」メニューが開きます。石の斧、簡易な石の稿、寝袋、麻ロープなど、序盤に必要なものはここから確認できます。
+
+<a className="hh-wide-shot" href={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} target="_blank" rel="noreferrer">
+  <img src={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} alt="F1で開く手作りメニュー" />
+</a>
+
+## 序盤で優先して作るもの
+
+| 優先度 | アイテム | 用途 | 状態 |
+| --- | --- | --- | --- |
+| 高 | 石の斧 | 木や地形の破壊、基本採取 | 確認済み |
+| 高 | 簡易な石の稿 | 地下拠点を作るための穴掘り | 確認済み |
+| 高 | 寝袋 | 拠点の基礎、復活地点として重要 | 確認済み |
+| 高 | 木工作業台 | 序盤クラフトの中心 | 確認済み |
+| 中 | 麻ロープ | 道具クラフトの材料 | 確認済み |
+
+## 簡易な石の稿
+
+地下に穴を掘るために必要です。序盤の地下仮拠点を作る場合、早めに作ります。
+
+<div className="hh-two-shot">
+  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} target="_blank" rel="noreferrer">
+    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} alt="簡易な石の稿" />
+  </a>
+  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} target="_blank" rel="noreferrer">
+    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} alt="簡易な石の稿の材料" />
+  </a>
+</div>
+
+| 完成品 | 必要素材 |
+| --- | --- |
+| 簡易な石の稿 | 原木 x10、石 x20、麻ロープ x2 |
+
+## 麻ロープ
+
+麻ロープは植物繊維から作れます。
+
+<a className="hh-wide-shot hh-small-shot" href={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} target="_blank" rel="noreferrer">
+  <img src={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} alt="麻ロープ" />
+</a>
+
+| 完成品 | 必要素材 |
+| --- | --- |
+| 麻ロープ x1 | 植物繊維 x2 |
 
 ## クラフトカテゴリ
 
-| カテゴリ | 状態 | 内容 | 次に確認すること |
-| --- | --- | --- | --- |
-| 素材加工 | 未確認 | 資源を別素材へ変換するクラフト | 作業台、必要素材、変換量 |
-| 建築クラフト | 未確認 | 壁、床、設備、防衛パーツなど | 建築UI、必要素材、耐久 |
-| 車両組立 | 未確認 | 建材を組み合わせた車両・移動拠点 | 基本パーツ、操作部品、動力 |
-| 武器クラフト | 未確認 | 近接武器、銃器、弾薬など | レシピ、必要設備 |
-| 罠クラフト | 未確認 | 拠点防衛用の罠 | 種類、必要素材、起動条件 |
-| 電子部品クラフト | 未確認 | チップ、基板、電池などに関係する可能性 | 用途、必要素材、設備 |
+| カテゴリ | 内容 |
+| --- | --- |
+| [素材加工](./material-processing/) | 資源を別素材へ変換するクラフト |
+| [建築クラフト](./building-crafting/) | 壁、床、拠点用パーツなど |
+| [車両組み立て](./vehicle-assembly/) | ビーグル、車両部品、移動拠点 |
+| [トラップクラフト](./trap-crafting/) | 防衛用トラップ |
 
-## レシピ一覧
+## 今後追加する情報
 
-現時点では、確認済みレシピは未登録です。
-
-| レシピ名 | 状態 | 完成品 | 必要素材 | 必要設備 | メモ |
-| --- | --- | --- | --- | --- | --- |
-| 未登録 | 不明 |  |  |  | ゲーム内確認後に追加 |
-
-## 車両組立関連
-
-Steam公式ストアでは、任意の建築素材を組み合わせて車両や移動拠点を作れること、Luaスクリプトで車両制御できることが説明されています。  
-Steamコミュニティには、車両組立やフレキシブルローターに関するガイドがあります。
-
-| 項目 | 状態 | 出典 |
-| --- | --- | --- |
-| 乗り物組立ガイド（初級編） | 未確認 | Steamコミュニティガイド |
-| フレキシブルローター考察 | 未確認 | Steamコミュニティガイド |
-| Luaスクリプトによる車両制御 | 公式記載あり / 詳細未確認 | Steam公式ストア |
-
-## 確認するとよいこと
-
-- クラフト画面の開き方
-- 作業台や設備が必要か
-- レシピが最初から見えるか、アンロック制か
-- 資源の加工先
-- 建築パーツとアイテムクラフトが同じUIか
-- 車両組立がクラフト扱いか、建築扱いか
-- 罠の作成方法と起動条件
-- Luaスクリプト機能が現バージョンで利用可能か
-
-## 記録テンプレート
-
-```md
-# レシピ名
-
-## 現在の状態
-- 状態:
-- 確認日:
-- 情報源:
-- 信頼度:
-
-## 完成品
-
-## 必要素材
-
-## 必要設備
-
-## 作成手順
-
-## 用途
-
-## 未確認事項
-```
-
-## 出典
-
-- Steam公式ストア: `https://store.steampowered.com/app/2393970/Human_Host/`
-- Steamコミュニティガイド一覧: `https://steamcommunity.com/app/2393970/guides/`
-- 乗り物組立ガイド（初級編）: `https://steamcommunity.com/sharedfiles/filedetails/?id=3732507858`
-- フレキシブルローター考察: `https://steamcommunity.com/sharedfiles/filedetails/?id=3734326900`
+- 石の斧の材料
+- 寝袋の材料
+- 木工作業台の材料
+- 収納箱の材料
+- 作業台ごとのクラフト一覧
+- クラフトに必要な設備
