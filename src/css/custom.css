@@ -13,8 +13,12 @@
 }
 
 .markdown table {
-  display: table;
   width: 100%;
+}
+
+.markdown table img {
+  border-radius: 6px;
+  max-width: min(420px, 100%);
 }
 
 .status-confirmed {
@@ -122,6 +126,11 @@
 }
 
 @media (max-width: 640px) {
+  .markdown table {
+    display: block;
+    overflow-x: auto;
+  }
+
   .hh-hero {
     padding: 1.5rem 1rem;
   }
