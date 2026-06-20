@@ -59,8 +59,8 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
 | ドアの盾 | 1 | 装備品。身体部位を保護 |
 | 破損の木板 | 60 | 建築材料。形はブロック |
 
-<details className="hh-image-details">
-  <summary>狩人の確認画像</summary>
+<div className="hh-image-details">
+  <div className="hh-image-details-title">狩人の確認画像</div>
   <div className="hh-shot-grid">
     <a href={useBaseUrl('/images/screenshots/characters/hunter-skill-archer.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/hunter-skill-archer.png')} alt="狩人 スキル アーチャー" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/hunter-wooden-bow.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/hunter-wooden-bow.png')} alt="狩人 木弓" /></a>
@@ -70,7 +70,7 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
     <a href={useBaseUrl('/images/screenshots/characters/hunter-door-shield.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/hunter-door-shield.png')} alt="狩人 ドアの盾" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/hunter-broken-wooden-board.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/hunter-broken-wooden-board.png')} alt="狩人 破損の木板" /></a>
   </div>
-</details>
+</div>
 
 ## スカベンジャー
 
@@ -103,8 +103,8 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
 | ドアの盾 | 1 | 装備品。身体部位を保護 |
 | 破損の木板 | 60 | 建築材料。形はブロック |
 
-<details className="hh-image-details">
-  <summary>スカベンジャーの確認画像</summary>
+<div className="hh-image-details">
+  <div className="hh-image-details-title">スカベンジャーの確認画像</div>
   <div className="hh-shot-grid">
     <a href={useBaseUrl('/images/screenshots/characters/scavenger-skill.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/scavenger-skill.png')} alt="スカベンジャー スキル" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/scavenger-stone-axe.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/scavenger-stone-axe.png')} alt="スカベンジャー 石の斧" /></a>
@@ -114,7 +114,7 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
     <a href={useBaseUrl('/images/screenshots/characters/scavenger-door-shield.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/scavenger-door-shield.png')} alt="スカベンジャー ドアの盾" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/scavenger-broken-wooden-board.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/scavenger-broken-wooden-board.png')} alt="スカベンジャー 破損の木板" /></a>
   </div>
-</details>
+</div>
 
 ## 整備士
 
@@ -150,8 +150,8 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
 | ドアの盾 | 1 | 装備品。身体部位を保護 |
 | レーザートラップ | 1 | トラップダメージ300。味方を攻撃しない |
 
-<details className="hh-image-details">
-  <summary>整備士の確認画像</summary>
+<div className="hh-image-details">
+  <div className="hh-image-details-title">整備士の確認画像</div>
   <div className="hh-shot-grid">
     <a href={useBaseUrl('/images/screenshots/characters/mechanic-skill.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/mechanic-skill.png')} alt="整備士 スキル" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/mechanic-crane.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/mechanic-crane.png')} alt="整備士 クレーン" /></a>
@@ -164,7 +164,7 @@ Human Hostでは、ゲーム開始時にキャラクターを選びます。
     <a href={useBaseUrl('/images/screenshots/characters/mechanic-door-shield.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/mechanic-door-shield.png')} alt="整備士 ドアの盾" /></a>
     <a href={useBaseUrl('/images/screenshots/characters/mechanic-laser-trap.png')} target="_blank" rel="noreferrer"><img src={useBaseUrl('/images/screenshots/characters/mechanic-laser-trap.png')} alt="整備士 レーザートラップ" /></a>
   </div>
-</details>
+</div>
 
 ## 現時点の注意
 
