@@ -3,19 +3,20 @@ const sidebars = {
     {
       type: 'doc',
       id: 'index',
-      label: 'トップ'
+      label: 'トップ',
     },
     {
       type: 'category',
       label: '初心者ガイド',
       items: [
         'getting-started/index',
+        'getting-started/character-selection',
         'getting-started/early-game',
         'getting-started/screen-guide',
         'getting-started/food-water-medicine',
         'getting-started/first-resources',
-        'settings/hotkeys'
-      ]
+        'settings/hotkeys',
+      ],
     },
     {
       type: 'category',
@@ -23,8 +24,8 @@ const sidebars = {
       items: [
         'settings/index',
         'settings/new-game',
-        'settings/hotkeys'
-      ]
+        'settings/hotkeys',
+      ],
     },
     {
       type: 'category',
@@ -44,8 +45,8 @@ const sidebars = {
             'biomes/rainforest',
             'biomes/swamp',
             'biomes/snowland',
-            'biomes/snowy-mountain'
-          ]
+            'biomes/snowy-mountain',
+          ],
         },
         {
           type: 'category',
@@ -76,8 +77,8 @@ const sidebars = {
             'resources/log',
             'resources/charcoal',
             'resources/cactus',
-            'resources/plant-fiber'
-          ]
+            'resources/plant-fiber',
+          ],
         },
         'items/index',
         {
@@ -88,19 +89,19 @@ const sidebars = {
             'crafting/material-processing',
             'crafting/building-crafting',
             'crafting/vehicle-assembly',
-            'crafting/trap-crafting'
-          ]
+            'crafting/trap-crafting',
+          ],
         },
-        'building/index'
-      ]
+        'building/index',
+      ],
     },
     {
       type: 'category',
       label: '探索・戦闘',
       items: [
         'enemies/index',
-        'vehicles/index'
-      ]
+        'vehicles/index',
+      ],
     },
     {
       type: 'category',
@@ -108,17 +109,17 @@ const sidebars = {
       items: [
         'trader-system/index',
         'updates/index',
-        'unconfirmed/index'
-      ]
+        'unconfirmed/index',
+      ],
     },
     {
       type: 'category',
       label: '運用',
       items: [
-        'glossary/index'
-      ]
-    }
-  ]
+        'glossary/index',
+      ],
+    },
+  ],
 };
 
 module.exports = sidebars;
