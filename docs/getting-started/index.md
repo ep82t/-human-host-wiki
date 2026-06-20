@@ -8,7 +8,7 @@ slug: /getting-started/
 Human Hostを始めた直後に見るためのページです。  
 現時点ではアーリーアクセス中のため、未確認情報は未確認として扱います。
 
-![Human Host opening menu](/images/screenshots/opening-menu.png)
+![Human Host opening menu](pathname:///images/screenshots/opening-menu.png)
 
 ## まず読むページ
 

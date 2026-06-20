@@ -20,11 +20,11 @@ slug: /settings/new-game/
 
 | 画像 | 内容 |
 | --- | --- |
-| ![ニューゲーム選択](/images/screenshots/new-game/new-game-menu.png) | **開始までの流れ**<br />メニューで「ニューゲーム」を選ぶ。次に空のセーブスロットを選び、難易度やワールド設定を確認して「次へ」で進む。 |
-| ![セーブスロット選択](/images/screenshots/new-game/save-slot-select.png) | **セーブスロット選択**<br />自動保存枠と、1から5のセーブスロットが表示される。空のスロットを選んで新規ゲームを始める。 |
-| ![ワールド設定 1](/images/screenshots/new-game/world-settings-01.png) | **基本設定・戦利品・プレイヤー・ゾンビ移動**<br />難易度、戦利品の量と再出現、死亡時ドロップ、XP、ゾンビの走行モードなどを調整する画面。 |
-| ![ワールド設定 2](/images/screenshots/new-game/world-settings-02.png) | **ゾンビ強化・ゾンビ出現・群集**<br />ゾンビのダメージ、突然変異、再出現間隔、屋外・屋内ゾンビ数、群集ゾンビ数などを調整する画面。 |
-| ![ワールド設定 3](/images/screenshots/new-game/world-settings-03.png) | **ワールド・屍体**<br />ワールドシード、昼夜サイクル、昼の長さ、最大屍体数、屍体消滅時間などを調整する画面。 |
+| ![ニューゲーム選択](pathname:///images/screenshots/new-game/new-game-menu.png) | **開始までの流れ**<br />メニューで「ニューゲーム」を選ぶ。次に空のセーブスロットを選び、難易度やワールド設定を確認して「次へ」で進む。 |
+| ![セーブスロット選択](pathname:///images/screenshots/new-game/save-slot-select.png) | **セーブスロット選択**<br />自動保存枠と、1から5のセーブスロットが表示される。空のスロットを選んで新規ゲームを始める。 |
+| ![ワールド設定 1](pathname:///images/screenshots/new-game/world-settings-01.png) | **基本設定・戦利品・プレイヤー・ゾンビ移動**<br />難易度、戦利品の量と再出現、死亡時ドロップ、XP、ゾンビの走行モードなどを調整する画面。 |
+| ![ワールド設定 2](pathname:///images/screenshots/new-game/world-settings-02.png) | **ゾンビ強化・ゾンビ出現・群集**<br />ゾンビのダメージ、突然変異、再出現間隔、屋外・屋内ゾンビ数、群集ゾンビ数などを調整する画面。 |
+| ![ワールド設定 3](pathname:///images/screenshots/new-game/world-settings-03.png) | **ワールド・屍体**<br />ワールドシード、昼夜サイクル、昼の長さ、最大屍体数、屍体消滅時間などを調整する画面。 |
 
 ## セーブスロット
 

@@ -10,11 +10,11 @@ slug: /settings/hotkeys/
 
 ## スクリーンショット
 
-![ホットキー 1](/images/screenshots/settings/hotkeys-01.png)
+![ホットキー 1](pathname:///images/screenshots/settings/hotkeys-01.png)
 
-![ホットキー 2](/images/screenshots/settings/hotkeys-02.png)
+![ホットキー 2](pathname:///images/screenshots/settings/hotkeys-02.png)
 
-![ホットキー 3](/images/screenshots/settings/hotkeys-03.png)
+![ホットキー 3](pathname:///images/screenshots/settings/hotkeys-03.png)
 
 ## マウス
 
@@ -68,4 +68,3 @@ slug: /settings/hotkeys/
 - 画面右下に「すべての設定はゲーム開始後に有効になります。」と表示されています。
 - スクリーンショットに写っていないホットキーは未記録です。
 - 今後のアップデートで初期キーが変わる可能性があります。
-

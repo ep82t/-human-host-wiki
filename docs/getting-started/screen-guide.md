@@ -8,7 +8,7 @@ slug: /getting-started/screen-guide/
 Human Hostの画面表示、メニュー、HUD、状態表示を整理するページです。  
 現時点ではオープニング画面のスクリーンショットのみ確認済みです。
 
-![Human Host opening menu](/images/screenshots/opening-menu.png)
+![Human Host opening menu](pathname:///images/screenshots/opening-menu.png)
 
 ## オープニング画面
 

@@ -4,8 +4,10 @@ title: Human Host Wiki
 slug: /
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 <div className="hh-hero">
-  <img src="/images/human-host-logo.png" alt="Human Host" className="hh-hero-logo" />
+  <img src={useBaseUrl('/images/human-host-logo.png')} alt="Human Host" className="hh-hero-logo" />
   <p className="hh-hero-subtitle">
     アーリーアクセス中のサバイバルクラフト情報を、確認状態つきで整理する個人Wiki。
   </p>
@@ -14,52 +16,52 @@ slug: /
 ## まず見る場所
 
 <div className="hh-card-grid">
-  <a className="hh-card" href="/getting-started/early-game/">
+  <a className="hh-card" href={useBaseUrl('/getting-started/early-game/')}>
     <span className="hh-card-kicker">Start Here</span>
     <strong>序盤の進め方</strong>
     <span>最初に何をするか、何を確認するか。</span>
   </a>
-  <a className="hh-card" href="/settings/new-game/">
+  <a className="hh-card" href={useBaseUrl('/settings/new-game/')}>
     <span className="hh-card-kicker">New Game</span>
     <strong>ニューゲーム設定</strong>
     <span>難易度、戦利品、ゾンビ、ワールド設定。</span>
   </a>
-  <a className="hh-card" href="/getting-started/food-water-medicine/">
+  <a className="hh-card" href={useBaseUrl('/getting-started/food-water-medicine/')}>
     <span className="hh-card-kicker">Survival</span>
     <strong>食料・水・医薬品</strong>
     <span>生き残るための補給品を確認。</span>
   </a>
-  <a className="hh-card" href="/biomes/">
+  <a className="hh-card" href={useBaseUrl('/biomes/')}>
     <span className="hh-card-kicker">World</span>
     <strong>バイオーム</strong>
     <span>資源分布、探索場所、拠点向きの記録。</span>
   </a>
-  <a className="hh-card" href="/resources/">
+  <a className="hh-card" href={useBaseUrl('/resources/')}>
     <span className="hh-card-kicker">Materials</span>
     <strong>資源</strong>
     <span>採取方法、入手場所、用途を整理。</span>
   </a>
-  <a className="hh-card" href="/items/">
+  <a className="hh-card" href={useBaseUrl('/items/')}>
     <span className="hh-card-kicker">Inventory</span>
     <strong>アイテム</strong>
     <span>食料、医療、素材、ツール、弾薬。</span>
   </a>
-  <a className="hh-card" href="/crafting/">
+  <a className="hh-card" href={useBaseUrl('/crafting/')}>
     <span className="hh-card-kicker">Recipes</span>
     <strong>クラフト</strong>
     <span>レシピ、必要素材、作業台、優先度。</span>
   </a>
-  <a className="hh-card" href="/settings/hotkeys/">
+  <a className="hh-card" href={useBaseUrl('/settings/hotkeys/')}>
     <span className="hh-card-kicker">Controls</span>
     <strong>ホットキー</strong>
     <span>移動、使用、マップ、バックパックなどの操作。</span>
   </a>
-  <a className="hh-card" href="/building/">
+  <a className="hh-card" href={useBaseUrl('/building/')}>
     <span className="hh-card-kicker">Base</span>
     <strong>建築</strong>
     <span>拠点、防衛、収納、生産設備のメモ。</span>
   </a>
-  <a className="hh-card" href="/trader-system/">
+  <a className="hh-card" href={useBaseUrl('/trader-system/')}>
     <span className="hh-card-kicker">In Development</span>
     <strong>Trader System</strong>
     <span>開発中のNPC取引システムを追跡。</span>
