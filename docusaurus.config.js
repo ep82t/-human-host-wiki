@@ -20,8 +20,8 @@ const config = {
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
-      onBrokenMarkdownLinks: 'warn'
-    }
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
 
   i18n: {
@@ -30,9 +30,9 @@ const config = {
     localeConfigs: {
       ja: {
         label: '日本語',
-        direction: 'ltr'
-      }
-    }
+        direction: 'ltr',
+      },
+    },
   },
 
   presets: [
@@ -41,31 +41,32 @@ const config = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          routeBasePath: '/'
+          routeBasePath: '/',
         },
         blog: false,
         theme: {
-          customCss: require.resolve('./src/css/custom.css')
-        }
-      }
-    ]
+          customCss: require.resolve('./src/css/custom.css'),
+        },
+      },
+    ],
   ],
 
   themeConfig: {
     navbar: {
       title: 'Human Host Wiki',
       items: [
-        {to: '/', label: 'トップ', position: 'left'},
-        {to: '/biomes', label: 'バイオーム', position: 'left'},
-        {to: '/resources', label: '資源', position: 'left'},
-        {to: '/items', label: 'アイテム', position: 'left'},
-        {to: '/updates', label: '更新履歴', position: 'left'},
+        { to: '/', label: 'トップ', position: 'left' },
+        { to: '/getting-started/start-flow', label: '初心者ガイド', position: 'left' },
+        { to: '/biomes', label: 'バイオーム', position: 'left' },
+        { to: '/resources', label: '資源', position: 'left' },
+        { to: '/items', label: 'アイテム', position: 'left' },
+        { to: '/updates', label: '更新履歴', position: 'left' },
         {
-          href: 'https://github.com/',
+          href: 'https://github.com/ep82t/-human-host-wiki',
           label: 'GitHub',
-          position: 'right'
-        }
-      ]
+          position: 'right',
+        },
+      ],
     },
     footer: {
       style: 'dark',
@@ -73,18 +74,18 @@ const config = {
         {
           title: 'Wiki',
           items: [
-            {label: 'トップ', to: '/'},
-            {label: '未確認情報', to: '/unconfirmed'},
-            {label: '用語集', to: '/glossary'}
-          ]
-        }
+            { label: 'トップ', to: '/' },
+            { label: '未確認情報', to: '/unconfirmed' },
+            { label: '用語集', to: '/glossary' },
+          ],
+        },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Human Host Wiki.`
+      copyright: `Copyright (c) ${new Date().getFullYear()} Human Host Wiki.`,
     },
     prism: {
-      additionalLanguages: ['yaml']
-    }
-  }
+      additionalLanguages: ['yaml'],
+    },
+  },
 };
 
 module.exports = config;
