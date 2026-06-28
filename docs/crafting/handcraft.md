@@ -10,16 +10,16 @@ slug: /crafting/handcraft/
 
 ## 道具
 
-| 作るもの | ジャンル | 必要素材 | メモ |
-| --- | --- | --- | --- |
-| ![簡易包帯](pathname:///images/recipes/handcraft/recipes/簡易包帯.png)<br />簡易包帯 | 道具 | 裂けた布 x2 | 回復・応急処置用。 |
-| ![骨折用スプリント](pathname:///images/recipes/handcraft/recipes/骨折用スプリント.png)<br />骨折用スプリント | 道具 | 植物繊維 x15<br />原木 x10<br />石 x6<br />麻ロープ x2 | 骨折対策用。 |
-| ![石の斧](pathname:///images/recipes/handcraft/recipes/石の斧.png)<br />石の斧 | 道具 | 原木 x8<br />石 x6<br />麻ロープ x2 | 序盤の採取・破壊に使う基本ツール。 |
-| ![簡易な石の稿](pathname:///images/recipes/handcraft/recipes/簡易な石の稿.png)<br />簡易な石の稿 | 道具 | 原木 x10<br />石 x20<br />麻ロープ x2 | 地下拠点用の穴掘りに必要。 |
-| ![寝袋](pathname:///images/recipes/handcraft/recipes/寝袋.png)<br />寝袋 | 道具 | 裂けた布 x5<br />麻ロープ x2 | 序盤拠点に置きたい重要アイテム。 |
-| ![麻ロープ](pathname:///images/recipes/handcraft/recipes/麻ロープ.png)<br />麻ロープ | 道具 | 植物繊維 x2 | 序盤クラフトでよく使う中間素材。 |
-| 松明 | 道具 | 原木 x10<br />麻ロープ x2 | 光源。画像は未確認。 |
-| ツールキット | 道具 | 歯車 x2<br />釘 x5<br />廃黄銅 x15<br />廃棄プラスチック x20<br />接着剤 x25 | 素材数が多いため、必要素材は再確認推奨。 |
+| 作るもの | 必要素材 | メモ |
+| --- | --- | --- |
+| ![簡易包帯](pathname:///images/recipes/handcraft/recipes/簡易包帯.png)<br />簡易包帯 | 裂けた布 x2 | 回復・応急処置用。 |
+| ![骨折用スプリント](pathname:///images/recipes/handcraft/recipes/骨折用スプリント.png)<br />骨折用スプリント | 植物繊維 x15<br />原木 x10<br />石 x6<br />麻ロープ x2 | 骨折対策用。 |
+| ![石の斧](pathname:///images/recipes/handcraft/recipes/石の斧.png)<br />石の斧 | 原木 x8<br />石 x6<br />麻ロープ x2 | 序盤の採取・破壊に使う基本ツール。 |
+| ![簡易な石の稿](pathname:///images/recipes/handcraft/recipes/簡易な石の稿.png)<br />簡易な石の稿 | 原木 x10<br />石 x20<br />麻ロープ x2 | 地下拠点用の穴掘りに必要。 |
+| ![寝袋](pathname:///images/recipes/handcraft/recipes/寝袋.png)<br />寝袋 | 裂けた布 x5<br />麻ロープ x2 | 序盤拠点に置きたい重要アイテム。 |
+| ![麻ロープ](pathname:///images/recipes/handcraft/recipes/麻ロープ.png)<br />麻ロープ | 植物繊維 x2 | 序盤クラフトでよく使う中間素材。 |
+| 松明 | 原木 x10<br />麻ロープ x2 | 光源。画像は未確認。 |
+| ツールキット | 歯車 x2<br />釘 x5<br />廃黄銅 x15<br />廃棄プラスチック x20<br />接着剤 x25 | 素材数が多いため、必要素材は再確認推奨。 |
 
 ## 武器
 
