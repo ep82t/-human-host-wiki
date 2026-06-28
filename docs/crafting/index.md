@@ -8,7 +8,32 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 # クラフト一覧
 
 Human Hostのクラフト情報を整理するページです。  
-現時点では、ゲーム開始直後に使う「手作り」と、序盤拠点づくりに必要なものを優先してまとめます。
+作業台ごとにページを分け、各ページ内でジャンル別にレシピを確認できるようにします。
+
+## 作業台別ページ
+
+| 作業台 | 内容 | 状態 |
+| --- | --- | --- |
+| [手作り](./handcraft/) | F1で開く基本クラフト。道具、武器、素材、防具、建築、トラップを掲載 | 確認済みデータあり |
+| 木工作業台 | 木材系クラフト、序盤拠点づくり | 未作成 |
+| 切断作業台 | 素材加工系と思われる | 未作成 |
+| 溶炉 | 金属加工系と思われる | 未作成 |
+| 金床 | 金属加工系と思われる | 未作成 |
+| ガン スミス 作業台 | 武器クラフト系と思われる | 未作成 |
+| コンクリートミキサー | 建築素材加工系と思われる | 未作成 |
+| 生化作業台 | 生化学・医薬品系と思われる | 未作成 |
+| 電子作業台 | 電子部品系と思われる | 未作成 |
+| 機械作業台 | 機械・車両系と思われる | 未作成 |
+
+## 序盤で優先して作るもの
+
+| 優先度 | 作るもの | 作業台 | 用途 |
+| --- | --- | --- | --- |
+| 高 | 石の斧 | 手作り | 木や地形の破壊、基本採取 |
+| 高 | 簡易な石の稿 | 手作り | 地下拠点を作るための穴掘り |
+| 高 | 寝袋 | 手作り | 拠点の基礎、復活地点として重要 |
+| 高 | 木工作業台 | 手作り | 序盤クラフトの中心 |
+| 中 | 麻ロープ | 手作り | 道具クラフトの材料 |
 
 ## F1で手作りメニューを開く
 
@@ -17,45 +42,6 @@ F1を押すと「手作り」メニューが開きます。石の斧、簡易な
 <a className="hh-wide-shot" href={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} target="_blank" rel="noreferrer">
   <img src={useBaseUrl('/images/screenshots/early-game/handcraft-menu.png')} alt="F1で開く手作りメニュー" />
 </a>
-
-## 序盤で優先して作るもの
-
-| 優先度 | アイテム | 用途 | 状態 |
-| --- | --- | --- | --- |
-| 高 | 石の斧 | 木や地形の破壊、基本採取 | 確認済み |
-| 高 | 簡易な石の稿 | 地下拠点を作るための穴掘り | 確認済み |
-| 高 | 寝袋 | 拠点の基礎、復活地点として重要 | 確認済み |
-| 高 | 木工作業台 | 序盤クラフトの中心 | 確認済み |
-| 中 | 麻ロープ | 道具クラフトの材料 | 確認済み |
-
-## 簡易な石の稿
-
-地下に穴を掘るために必要です。序盤の地下仮拠点を作る場合、早めに作ります。
-
-<div className="hh-two-shot">
-  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} target="_blank" rel="noreferrer">
-    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe.png')} alt="簡易な石の稿" />
-  </a>
-  <a href={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} target="_blank" rel="noreferrer">
-    <img src={useBaseUrl('/images/screenshots/early-game/simple-stone-pickaxe-materials.png')} alt="簡易な石の稿の材料" />
-  </a>
-</div>
-
-| 完成品 | 必要素材 |
-| --- | --- |
-| 簡易な石の稿 | 原木 x10、石 x20、麻ロープ x2 |
-
-## 麻ロープ
-
-麻ロープは植物繊維から作れます。
-
-<a className="hh-wide-shot hh-small-shot" href={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} target="_blank" rel="noreferrer">
-  <img src={useBaseUrl('/images/screenshots/early-game/hemp-rope.png')} alt="麻ロープ" />
-</a>
-
-| 完成品 | 必要素材 |
-| --- | --- |
-| 麻ロープ x1 | 植物繊維 x2 |
 
 ## クラフトカテゴリ
 
@@ -68,9 +54,8 @@ F1を押すと「手作り」メニューが開きます。石の斧、簡易な
 
 ## 今後追加する情報
 
-- 石の斧の材料
-- 寝袋の材料
-- 木工作業台の材料
-- 収納箱の材料
-- 作業台ごとのクラフト一覧
-- クラフトに必要な設備
+- 木工作業台以降の作業台ページ
+- 作業台ごとの画像
+- レシピの解放条件
+- 作業台の設置条件
+- レシピ変更履歴

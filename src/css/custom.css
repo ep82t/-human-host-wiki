@@ -21,6 +21,13 @@
   max-width: min(420px, 100%);
 }
 
+.markdown table td > img:first-child {
+  background: #111;
+  height: 42px;
+  object-fit: contain;
+  width: 42px;
+}
+
 .status-confirmed {
   color: #1f7a3a;
   font-weight: 700;

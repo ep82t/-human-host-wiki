@@ -1,66 +1,485 @@
-# Human Host crafting recipe data.
 schema:
   fields:
-    - id
-    - name_ja
-    - name_en
-    - category
-    - status
-    - source
-    - verified_date
-    - output
-    - materials
     - workstation
-    - use_case
-    - priority
-    - notes
+    - genre
+    - name
+    - materials
+    - memo
+    - status
 
-crafting_categories:
-  - id: material-processing
-    name_ja: 素材加工
-    name_en: Material Processing
-    status: unconfirmed
-    source: research-needed
-    notes: 資源を別素材へ変換するクラフト。作業台や変換量は未確認。
-  - id: building-crafting
-    name_ja: 建築クラフト
-    name_en: Building Crafting
-    status: unconfirmed
-    source: official-steam-store
-    notes: 公式ストアで建築自由度に言及あり。具体的レシピは未確認。
-  - id: vehicle-assembly
-    name_ja: 車両組立
-    name_en: Vehicle Assembly
-    status: unconfirmed
-    source: official-steam-store-and-steam-community-guide
-    notes: 公式ストアとSteamコミュニティガイドで車両組立に関する情報あり。
-  - id: weapon-crafting
-    name_ja: 武器クラフト
-    name_en: Weapon Crafting
-    status: unconfirmed
-    source: research-needed
-    notes: 武器や弾薬の作成方法は未確認。
-  - id: trap-crafting
-    name_ja: 罠クラフト
-    name_en: Trap Crafting
-    status: unconfirmed
-    source: official-steam-store
-    notes: 公式ストアで多様な罠に言及あり。具体的レシピは未確認。
-  - id: electronics-crafting
-    name_ja: 電子部品クラフト
-    name_en: Electronics Crafting
-    status: unconfirmed
-    source: steam-community-guide
-    notes: チップ、基板、充電式電池などがバイオーム固有アイテム候補として確認されている。
+workstations:
+  - id: handcraft
+    name: 手作り
+    route: /crafting/handcraft/
+    status: confirmed
+    source: HumanHostRecipeCapture/data/output/wiki/手作り.md
 
-known_related_guides:
-  - id: vehicle-assembly-basic
-    title_ja: 乗り物組立ガイド（初級編）
-    url: https://steamcommunity.com/sharedfiles/filedetails/?id=3732507858
-    status: unconfirmed
-  - id: flexible-rotor-notes
-    title_ja: フレキシブルローター考察
-    url: https://steamcommunity.com/sharedfiles/filedetails/?id=3734326900
-    status: unconfirmed
-
-recipes: []
+recipes:
+  - workstation: 手作り
+    genre: 道具
+    name: 簡易包帯
+    materials:
+      - name: 裂けた布
+        qty: 2
+    memo: 回復・応急処置用。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 骨折用スプリント
+    materials:
+      - name: 植物繊維
+        qty: 15
+      - name: 原木
+        qty: 10
+      - name: 石
+        qty: 6
+      - name: 麻ロープ
+        qty: 2
+    memo: 骨折対策用。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 石の斧
+    materials:
+      - name: 原木
+        qty: 8
+      - name: 石
+        qty: 6
+      - name: 麻ロープ
+        qty: 2
+    memo: 序盤の採取・破壊に使う基本ツール。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 簡易な石の稿
+    materials:
+      - name: 原木
+        qty: 10
+      - name: 石
+        qty: 20
+      - name: 麻ロープ
+        qty: 2
+    memo: 地下拠点用の穴掘りに必要。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 寝袋
+    materials:
+      - name: 裂けた布
+        qty: 5
+      - name: 麻ロープ
+        qty: 2
+    memo: 序盤拠点に置きたい重要アイテム。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 麻ロープ
+    materials:
+      - name: 植物繊維
+        qty: 2
+    memo: 序盤クラフトでよく使う中間素材。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: 松明
+    materials:
+      - name: 原木
+        qty: 10
+      - name: 麻ロープ
+        qty: 2
+    memo: 光源。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 道具
+    name: ツールキット
+    materials:
+      - name: 歯車
+        qty: 2
+      - name: 釘
+        qty: 5
+      - name: 廃黄銅
+        qty: 15
+      - name: 廃棄プラスチック
+        qty: 20
+      - name: 接着剤
+        qty: 25
+    memo: 素材数が多いため、必要素材は再確認推奨。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 石のナイフ
+    materials:
+      - name: 石
+        qty: 4
+    memo: 最低限の近接武器。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 鋭い小さな石のナイフ
+    materials:
+      - name: 原木
+        qty: 2
+      - name: 石
+        qty: 4
+      - name: 植物繊維
+        qty: 8
+    memo: 石のナイフ系。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 木の棒
+    materials:
+      - name: 原木
+        qty: 10
+    memo: 棒系武器または素材。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 簡易な太い木の棒
+    materials:
+      - name: 原木
+        qty: 15
+    memo: 棒系武器。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 骨のクラブ
+    materials:
+      - name: 動物の骨
+        qty: 15
+    memo: 骨素材の近接武器。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 骨のナイフ
+    materials:
+      - name: 動物の骨
+        qty: 8
+    memo: 骨素材の近接武器。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 木製の槍
+    materials:
+      - name: 原木
+        qty: 18
+    memo: リーチのある近接武器。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 武器
+    name: 簡易な石の槍
+    materials:
+      - name: 木の棒
+        qty: 1
+      - name: 石のナイフ
+        qty: 2
+      - name: 麻ロープ
+        qty: 2
+    memo: 序盤向けの槍。画像は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 素材
+    name: 木弓
+    materials:
+      - name: 原木
+        qty: 20
+      - name: 麻ロープ
+        qty: 8
+      - name: テープ
+        qty: 4
+      - name: 接着剤
+        qty: 3
+    memo: 弓カテゴリのクラフト。取得データ上のジャンルは「素材」。
+    status: confirmed
+  - workstation: 手作り
+    genre: 素材
+    name: 長弓
+    materials:
+      - name: 原木
+        qty: 30
+      - name: 麻ロープ
+        qty: 10
+      - name: 皮革
+        qty: 5
+      - name: テープ
+        qty: 10
+      - name: 革
+        qty: 5
+      - name: 接着剤
+        qty: 8
+    memo: 皮革と革の表記差は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 素材
+    name: 強化された木製の弓
+    materials:
+      - name: 鉄インゴット
+        qty: 5
+      - name: 赤木
+        qty: 20
+      - name: 麻ロープ
+        qty: 15
+      - name: 皮革
+        qty: 10
+      - name: テープ
+        qty: 12
+      - name: 接着剤
+        qty: 10
+    memo: 素材数が多いため、必要素材は再確認推奨。
+    status: confirmed
+  - workstation: 手作り
+    genre: 素材
+    name: 石の矢
+    materials:
+      - name: 石
+        qty: 1
+      - name: 原木
+        qty: 1
+      - name: テープ
+        qty: 1
+    memo: 弓用の矢。
+    status: confirmed
+  - workstation: 手作り
+    genre: 素材
+    name: 鉄の矢
+    materials:
+      - name: 鉄の矢
+        qty: 1
+      - name: 原木
+        qty: 1
+      - name: 羽
+        qty: 1
+      - name: テープ
+        qty: 1
+    memo: 材料に「鉄の矢 x1」と出ているため、表記は未確認。
+    status: needs_review
+  - workstation: 手作り
+    genre: 素材
+    name: タロンの矢
+    materials:
+      - name: 鉄の矢
+        qty: 2
+      - name: 原木
+        qty: 1
+      - name: テープ
+        qty: 1
+    memo: 上位矢と思われる。詳細効果は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨の盾
+    materials:
+      - name: 動物の骨
+        qty: 25
+      - name: 麻ロープ
+        qty: 12
+    memo: 骨素材の盾。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製ヘルメット
+    materials:
+      - name: 動物の骨
+        qty: 20
+      - name: 麻ロープ
+        qty: 8
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製胸当て
+    materials:
+      - name: 動物の骨
+        qty: 25
+      - name: 麻ロープ
+        qty: 12
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製腕当て
+    materials:
+      - name: 動物の骨
+        qty: 18
+      - name: 麻ロープ
+        qty: 8
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製籠手
+    materials:
+      - name: 動物の骨
+        qty: 14
+      - name: 麻ロープ
+        qty: 4
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製腿甲
+    materials:
+      - name: 動物の骨
+        qty: 20
+      - name: 麻ロープ
+        qty: 10
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 防具
+    name: 骨製すね当て
+    materials:
+      - name: 動物の骨
+        qty: 18
+      - name: 麻ロープ
+        qty: 8
+    memo: 骨防具。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 木工作業台
+    materials:
+      - name: 原木
+        qty: 10
+      - name: 石
+        qty: 15
+      - name: 植物繊維
+        qty: 20
+    memo: 序盤クラフトの中心になる作業台。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 切断作業台
+    materials:
+      - name: 廃鉄
+        qty: 40
+    memo: 作業台。用途は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 溶炉
+    materials:
+      - name: 廃鉄
+        qty: 50
+      - name: 廃黄銅
+        qty: 20
+    memo: 金属加工系と思われる。詳細は未確認。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 金床
+    materials:
+      - name: 原木
+        qty: 24
+      - name: 鉄インゴット
+        qty: 20
+      - name: 鋼鉄インゴット
+        qty: 6
+    memo: 金属加工系と思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: ガン スミス 作業台
+    materials:
+      - name: 板材
+        qty: 26
+      - name: 鉄インゴット
+        qty: 20
+      - name: 銅インゴット
+        qty: 10
+      - name: 鉄筋
+        qty: 10
+    memo: 武器クラフト用と思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: コンクリートミキサー
+    materials:
+      - name: 鉄インゴット
+        qty: 40
+      - name: 鉄筋
+        qty: 20
+    memo: 建築素材の加工に使うと思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 生化作業台
+    materials:
+      - name: 板材
+        qty: 16
+      - name: 鉄筋
+        qty: 8
+      - name: ガラス
+        qty: 28
+      - name: テープ
+        qty: 20
+      - name: 釘
+        qty: 6
+      - name: 期限切れサンドイッチ
+        qty: 80
+    memo: 生化学系クラフト用と思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 電子作業台
+    materials:
+      - name: 板材
+        qty: 22
+      - name: 鉄筋
+        qty: 14
+      - name: 銅線
+        qty: 30
+      - name: テープ
+        qty: 25
+      - name: スプリング
+        qty: 25
+      - name: 釘
+        qty: 8
+    memo: 電子部品系クラフト用と思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: 建築
+    name: 機械作業台
+    materials:
+      - name: 原木
+        qty: 35
+      - name: 鉄インゴット
+        qty: 30
+      - name: 銅インゴット
+        qty: 20
+      - name: テープ
+        qty: 30
+      - name: スプリング
+        qty: 20
+      - name: 廃棄プラスチック
+        qty: 30
+      - name: 釘
+        qty: 6
+    memo: 機械系クラフト用と思われる。
+    status: confirmed
+  - workstation: 手作り
+    genre: トラップ
+    name: ログスパイク
+    materials:
+      - name: 原木
+        qty: 15
+    memo: 序盤から作れる防衛トラップ。
+    status: confirmed
+  - workstation: 手作り
+    genre: トラップ
+    name: 釘トラップ
+    materials:
+      - name: 板材
+        qty: 1
+      - name: 釘
+        qty: 2
+    memo: 釘を使う防衛トラップ。
+    status: confirmed
+  - workstation: 手作り
+    genre: トラップ
+    name: 単体丸太スバイク
+    materials:
+      - name: 原木
+        qty: 15
+    memo: 名称は取得データどおり。表記は未確認。
+    status: needs_review

@@ -87,6 +87,7 @@ const sidebars = {
           label: 'クラフト',
           items: [
             'crafting/index',
+            'crafting/handcraft',
             'crafting/material-processing',
             'crafting/building-crafting',
             'crafting/vehicle-assembly',
