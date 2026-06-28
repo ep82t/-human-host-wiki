@@ -28,6 +28,10 @@
   width: 42px;
 }
 
+.hh-page-nav {
+  margin-top: 2rem;
+}
+
 .status-confirmed {
   color: #1f7a3a;
   font-weight: 700;

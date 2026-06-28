@@ -88,6 +88,7 @@ const sidebars = {
           items: [
             'crafting/index',
             'crafting/handcraft',
+            'crafting/woodworking',
             'crafting/material-processing',
             'crafting/building-crafting',
             'crafting/vehicle-assembly',

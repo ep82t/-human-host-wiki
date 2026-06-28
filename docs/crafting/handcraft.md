@@ -85,3 +85,7 @@ slug: /crafting/handcraft/
 - 入力元: `HumanHostRecipeCapture\data\output\wiki\手作り.md`
 - レシピ名と必要素材は取得データをもとに整理。
 - OCRまたは自動抽出由来と思われる表記ゆれは、メモ欄に「未確認」として残しています。
+
+<div className="hh-page-nav">
+  <a className="button button--primary" href="./woodworking/">次の作業台: 木工作業台</a>
+</div>
