@@ -337,23 +337,44 @@ function pollChatworkMessages() {
   }
 
   // 前回より新しいメッセージのみ抽出
-  var newMessages = messages.filter(function(m) {
+  var candidates = messages.filter(function(m) {
     return parseInt(m.message_id, 10) > lastId;
   });
 
-  if (newMessages.length === 0) {
+  if (candidates.length === 0) {
     Logger.log('新着なし（最終処理ID: ' + lastId + '）');
     return;
   }
 
-  Logger.log('新着メッセージ: ' + newMessages.length + '件');
+  // Webhookで記録済みのメッセージを除外（二重記録防止）
+  var webhookDone = _getWebhookProcessedIds();
+  var newMessages = candidates.filter(function(m) {
+    return !webhookDone[String(m.message_id)];
+  });
+
+  // 最終IDはWebhook処理済み分も含めて前進させる
+  var maxId = lastId;
+  candidates.forEach(function(m) {
+    var id = parseInt(m.message_id, 10);
+    if (id > maxId) maxId = id;
+  });
+
+  if (newMessages.length === 0) {
+    scriptProps.setProperty(LAST_MESSAGE_ID_KEY, String(maxId));
+    _pruneWebhookProcessedIds(maxId);
+    Logger.log('新着はすべてWebhook記録済み（最終ID: ' + maxId + '）');
+    return;
+  }
+
+  Logger.log('新着メッセージ: ' + newMessages.length + '件' +
+    (candidates.length > newMessages.length
+      ? '（Webhook記録済み ' + (candidates.length - newMessages.length) + '件を除外）' : ''));
 
   // キューに溜まった失敗エントリを再処理
   _processPendingEntries(token, roomId);
 
   var processed = 0;
   var failedCount = 0;
-  var maxId = lastId;
   var reportLines = []; // Chatwork報告用
 
   newMessages.forEach(function(msg) {
@@ -476,6 +497,7 @@ function pollChatworkMessages() {
 
   // 最後のメッセージIDを保存（次回の重複処理を防ぐ）
   scriptProps.setProperty(LAST_MESSAGE_ID_KEY, String(maxId));
+  _pruneWebhookProcessedIds(maxId);
   Logger.log('ポーリング完了: ' + processed + '件記録 / 最終ID: ' + maxId);
 
   // Chatworkに結果を報告

@@ -1,6 +1,15 @@
 // ============================================================
 // ChatworkWebhook.gs — Chatwork Webhook 受信・自動記録
 // ============================================================
+//
+// ポーラー（ChatworkPoller.gs）と同じ記録フローをリアルタイムに実行する。
+// - 新チラシ名を検出したらチラシSSを自動作成（FLYER_TYPESにも自動追加
+//   → 管理マップのチラシ選択に即反映）し、そのSSに記録する
+// - 既知チラシはチラシSSの「エリア」更新＋「配布記録」追記
+// - 処理済みメッセージIDを記録し、ポーラーとの二重記録を防ぐ
+// ============================================================
+
+var WEBHOOK_PROCESSED_IDS_KEY = 'CHATWORK_WEBHOOK_PROCESSED_IDS';
 
 /**
  * Chatwork Webhook のエントリーポイント
@@ -18,71 +27,145 @@ function handleChatworkWebhook(e) {
       return result;
     }
 
-    // #ポスティング タグがあるメッセージのみ処理
-    var body = payload.webhook_event && payload.webhook_event.body;
+    var ev = payload.webhook_event || {};
+    var body = ev.body;
     if (!body) {
       result.message = 'メッセージ本文が空です';
       return result;
     }
 
-    if (!_isPostingMessage(body)) {
+    var norm = _normalizeBody(String(body).trim());
+    var messageId = ev.message_id ? String(ev.message_id) : '';
+
+    // トークン・ルームID（通知や送信者名解決に使用。未設定でも記録処理は続行）
+    var token = '', roomId = '';
+    try { token = getProp(PROP_KEYS.CHATWORK_TOKEN); } catch (e1) {}
+    try { roomId = String(ev.room_id || getProp(PROP_KEYS.CHATWORK_ROOM_ID)); } catch (e2) {}
+
+    var senderName = _resolveChatworkSenderName(ev, token);
+
+    // 店舗設置報告（processStoreSetupMessage内でメッセージID重複防止済み）
+    if (_isStoreSetupMessage(norm)) {
+      var storeResult = processStoreSetupMessage(norm, senderName, ev.send_time, messageId);
+      Logger.log('店舗設置報告（Webhook）: ' +
+        (storeResult.success ? '登録 ' + (storeResult.count || 1) + '件' : (storeResult.reason || storeResult.error || '')));
+      if (!_isPostingMessage(norm)) {
+        result.success = true;
+        result.message = '店舗設置のみ処理';
+        return result;
+      }
+    }
+
+    // #ポスティング タグがあるメッセージのみ処理
+    if (!_isPostingMessage(norm)) {
       result.message = '#ポスティング タグなし：スキップ';
       result.success = true;
       return result;
     }
 
-    Logger.log('ポスティング報告を受信: ' + body);
+    Logger.log('ポスティング報告を受信（Webhook）: ' + norm);
 
-    // Claude API で解析
-    var parsed = parsePostingMessage(body);
-    if (parsed.error) {
-      _notifyChatworkError(parsed.error, payload);
-      result.message = 'AI解析エラー: ' + parsed.error;
+    // Claude API で解析（複数町対応：配列で返る）
+    var parsedList = parsePostingMessage(norm);
+    if (parsedList.error) {
+      _notifyChatworkError(parsedList.error, payload);
+      result.message = 'AI解析エラー: ' + parsedList.error;
       return result;
     }
+    if (!Array.isArray(parsedList)) parsedList = [parsedList]; // 旧レスポンス互換
 
-    // 必須項目チェック
-    if (!parsed.city || !parsed.town) {
-      var errMsg = '市町村名または町名が読み取れませんでした。\n投稿: ' + body;
+    if (parsedList.length === 0) {
+      var errMsg = '市町村名または町名が読み取れませんでした。\n投稿: ' + norm;
       _notifyChatworkError(errMsg, payload);
       result.message = errMsg;
       return result;
     }
 
-    // エリアマスタのステータスを「配布済み」に更新
-    var today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
-    var updateResult = updateArea({
-      city:       parsed.city,
-      town:       parsed.town,
-      chome:      parsed.chome,
-      status:     STATUS.DONE,
-      flyerType:  parsed.flyerType,
-      distCount:  parsed.distCount,
-      memberName: parsed.memberName,
-      distDate:   today
+    // 送信時刻を実施日として使用
+    var distDate = Utilities.formatDate(
+      ev.send_time ? new Date(ev.send_time * 1000) : new Date(),
+      'Asia/Tokyo', 'yyyy-MM-dd'
+    );
+    var distType = _detectDistType(norm);
+
+    var recorded = 0;
+    var failed = 0;
+    var lines = [];
+
+    parsedList.forEach(function(parsed) {
+      if (!parsed || !parsed.city || !parsed.town) { failed++; return; }
+
+      // 実施者名が空の場合はChatworkの送信者名を使用
+      if (!parsed.memberName && senderName) {
+        parsed.memberName = senderName;
+      }
+
+      // チラシ種別なしはスキップ（マスターには書かない設計：ポーラーと同じ）
+      if (!parsed.flyerType) {
+        Logger.log('  ⚠️ チラシ種別なし → スキップ');
+        failed++;
+        return;
+      }
+
+      var flyerName = _normalizeFlyerName(parsed.flyerType);
+
+      // 🆕 未知のチラシ名 → チラシSSを自動作成して記録
+      //    （createFlyerSpreadsheet が FLYER_TYPES にも自動追加
+      //      → 管理マップのチラシ選択ドロップダウンに即反映される）
+      if (!flyerSsExists(flyerName)) {
+        if (_autoCreateFlyerAndRecord(flyerName, parsed, distDate, senderName, token, roomId)) {
+          recorded++;
+          lines.push(parsed.city + ' ' + parsed.town + (parsed.chome || '') +
+            ' +' + parsed.distCount + '枚（' + parsed.memberName + '）[新チラシ自動作成]');
+        } else {
+          failed++; // 作成失敗分はキューに保存済み → ポーラーが再処理する
+        }
+        return;
+      }
+
+      // 既知チラシ → チラシSSに記録（マスターには書かない）
+      var flyerUpdateResult = updateAreaInFlyerSs(flyerName, {
+        city:       parsed.city,
+        town:       parsed.town,
+        chome:      parsed.chome      || '',
+        status:     STATUS.DONE,
+        flyerType:  parsed.flyerType,
+        distCount:  parsed.distCount,
+        memberName: parsed.memberName,
+        distDate:   distDate,
+        accumulate: true
+      });
+
+      if (flyerUpdateResult.success) {
+        appendDistLogToFlyerSs(flyerName, {
+          city:       parsed.city,
+          address:    parsed.town + (parsed.chome || ''),
+          flyerType:  parsed.flyerType,
+          distCount:  parsed.distCount,
+          memberName: parsed.memberName,
+          distType:   distType,
+          source:     'Chatwork自動'
+        });
+        recorded++;
+        lines.push('[' + distType + '] ' + parsed.city + ' ' + parsed.town + (parsed.chome || '') +
+          ' +' + parsed.distCount + '枚（' + parsed.memberName + '）');
+      } else {
+        Logger.log('⚠️ チラシSS更新失敗: ' + (flyerUpdateResult.error || ''));
+        failed++;
+      }
     });
 
-    if (!updateResult.success) {
-      Logger.log('エリア更新失敗（エリアが見つからない可能性）: ' + JSON.stringify(parsed));
-      // エリアが見つからなくても配布記録には追記する
+    // 記録できたメッセージはポーラーが二重処理しないようIDを保存
+    if (recorded > 0 && messageId) {
+      _markWebhookProcessed(messageId);
     }
 
-    // 配布記録に追記
-    appendDistLog({
-      city:       parsed.city,
-      address:    parsed.town + (parsed.chome ? parsed.chome : ''),
-      flyerType:  parsed.flyerType,
-      distCount:  parsed.distCount,
-      memberName: parsed.memberName,
-      distType:   '町丁目',
-      source:     'Chatwork自動'
-    });
+    result.success = (failed === 0);
+    result.message = '記録完了: ' + recorded + '件' +
+      (failed > 0 ? ' / 失敗: ' + failed + '件' : '') +
+      (lines.length > 0 ? '\n' + lines.join('\n') : '');
 
-    result.success = true;
-    result.message = '記録完了: ' + parsed.city + ' ' + parsed.town + parsed.chome +
-      ' / ' + parsed.flyerType + ' / ' + parsed.distCount + '枚 / ' + parsed.memberName;
-
-    Logger.log('Chatwork自動記録完了: ' + result.message);
+    Logger.log('Chatwork自動記録完了（Webhook）: ' + result.message);
 
   } catch (err) {
     Logger.log('Webhook処理エラー: ' + err.message + '\n' + err.stack);
@@ -90,6 +173,84 @@ function handleChatworkWebhook(e) {
   }
 
   return result;
+}
+
+/**
+ * Webhookペイロードから送信者名を解決する
+ * payloadに名前が無い場合はルームメンバーAPIで account_id → 名前 を引く
+ */
+function _resolveChatworkSenderName(ev, token) {
+  if (ev.account && ev.account.name) return ev.account.name;
+  if (!ev.account_id || !ev.room_id || !token) return '';
+  try {
+    var res = UrlFetchApp.fetch(
+      'https://api.chatwork.com/v2/rooms/' + ev.room_id + '/members',
+      { headers: { 'X-ChatWorkToken': token }, muteHttpExceptions: true }
+    );
+    if (res.getResponseCode() !== 200) return '';
+    var members = JSON.parse(res.getContentText());
+    for (var i = 0; i < members.length; i++) {
+      if (String(members[i].account_id) === String(ev.account_id)) {
+        return members[i].name || '';
+      }
+    }
+  } catch (e) {
+    Logger.log('送信者名の解決失敗: ' + e.message);
+  }
+  return '';
+}
+
+// ------------------------------------------------------------
+// Webhook処理済みメッセージID管理（ポーラーとの二重記録防止）
+// ------------------------------------------------------------
+
+/**
+ * Webhookで処理済みのメッセージIDを {id: true} のマップで返す
+ */
+function _getWebhookProcessedIds() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty(WEBHOOK_PROCESSED_IDS_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    var map = {};
+    arr.forEach(function(id) { map[String(id)] = true; });
+    return map;
+  } catch (e) {
+    return {};
+  }
+}
+
+/**
+ * メッセージIDを処理済みとして記録する（最大300件保持）
+ */
+function _markWebhookProcessed(messageId) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty(WEBHOOK_PROCESSED_IDS_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    if (arr.indexOf(String(messageId)) === -1) arr.push(String(messageId));
+    if (arr.length > 300) arr = arr.slice(arr.length - 300);
+    props.setProperty(WEBHOOK_PROCESSED_IDS_KEY, JSON.stringify(arr));
+  } catch (e) {
+    Logger.log('処理済みID保存失敗: ' + e.message);
+  }
+}
+
+/**
+ * ポーラーが追い越したID（lastId以下）を処理済みリストから削除する
+ * ポーリング完了時に呼ばれる
+ */
+function _pruneWebhookProcessedIds(lastId) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty(WEBHOOK_PROCESSED_IDS_KEY);
+    if (!raw) return;
+    var arr = JSON.parse(raw).filter(function(id) {
+      return parseInt(id, 10) > lastId;
+    });
+    props.setProperty(WEBHOOK_PROCESSED_IDS_KEY, JSON.stringify(arr));
+  } catch (e) {
+    Logger.log('処理済みID整理失敗: ' + e.message);
+  }
 }
 
 /**
