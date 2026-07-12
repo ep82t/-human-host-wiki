@@ -814,9 +814,9 @@ function parseBoolLoose(s){
 
 const FIELDS = [
   ["date","日付（必須）",["日付","date","年月日","day"]],
-  ["dist","距離",["距離","distance","走行距離","km"]],
   ["odoBefore","走行前",["走行前","before","開始","start","出発"]],
   ["odoAfter","走行後",["走行後","after","終了","end","到着"]],
+  ["dist","距離",["走行距離","距離","distance","km"]],
   ["type","利用区分",["区分","利用","type","category","用途"]],
   ["memo","メモ",["メモ","memo","note","備考","コメント"]],
   ["oil","オイル交換",["オイル","oil"]],
@@ -845,13 +845,19 @@ function prepareImport(text){
   importParsed = { header, rows: rows.slice(1) };
   // 列マッピングUI
   const grid = $("#mapGrid"); grid.innerHTML="";
+  const claimed = new Set();
   FIELDS.forEach(([key,label,kws])=>{
     const sel = document.createElement("select");
     sel.dataset.field = key;
     sel.innerHTML = `<option value="">（使わない）</option>` +
       header.map((h,i)=>`<option value="${i}">${escapeHtml(h||("列"+(i+1)))}</option>`).join("");
-    const hit = header.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k.toLowerCase())));
-    if(hit>=0) sel.value = String(hit);
+    // キーワードの優先順で、未使用の列から探す
+    let hit = -1;
+    for(const k of kws){
+      hit = header.findIndex((h,i)=>!claimed.has(i) && h.toLowerCase().includes(k.toLowerCase()));
+      if(hit>=0) break;
+    }
+    if(hit>=0){ sel.value = String(hit); claimed.add(hit); }
     const lab = document.createElement("label");
     lab.textContent = label;
     grid.appendChild(lab); grid.appendChild(sel);
@@ -872,6 +878,9 @@ function rowToRecord(row, map){
   const date = parseDateLoose(get("date"));
   if(!date) return null;
   const typeRaw = (get("type")||"").toLowerCase();
+  // 満タン列：空・「満タン」などは満タン扱い、「部分」「no」等のみ部分給油
+  const fullRaw = String(get("full") ?? "").trim().toLowerCase();
+  const isPartial = fullRaw.includes("部分") || ["no","false","0","×","✕","いいえ"].includes(fullRaw);
   const odoBefore = parseNumLoose(get("odoBefore"));
   const odoAfter  = parseNumLoose(get("odoAfter"));
   let dist = parseNumLoose(get("dist"));
@@ -887,7 +896,7 @@ function rowToRecord(row, map){
     memo: (get("memo")||"").trim(),
     oil: parseBoolLoose(get("oil")),
     fuel: parseNumLoose(get("fuel")),
-    full: map.full!=null ? parseBoolLoose(get("full")) || String(get("full")).trim()==="" : true
+    full: !isPartial
   };
 }
 function renderImportPreview(){
