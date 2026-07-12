@@ -169,3 +169,12 @@ projectName: 'human-host-wiki',
 - 未確認情報は未確認として扱ってください。
 - アーリーアクセス中のため、古い情報は更新確認が必要です。
 - Trader Systemは開発中です。
+
+## おまけツール
+
+Wiki本体とは別に、`static/tools/` に単体で動くツールを置いています。
+
+- 運転記録・燃費ログ: `static/tools/fuel-log/index.html`
+  - 公開後は `https://GitHubユーザー名.github.io/-human-host-wiki/tools/fuel-log/` で開けます。
+  - 走行距離・給油の記録から燃費（満タン法）を自動計算します。
+  - データは端末のブラウザ内に保存されます。CSV取り込み・書き出し、JSONバックアップ対応。

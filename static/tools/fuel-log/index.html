@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a78d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="燃費ログ">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛽</text></svg>">
+<title>運転記録・燃費ログ</title>
+<style>
+:root{
+  --surface-1:#fcfcfb; --page:#f9f9f7;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --series-1:#2a78d6; --series-1-soft:rgba(42,120,214,0.14);
+  --good:#006300; --danger:#d03b3b;
+  --accent:#2a78d6;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --surface-1:#1a1a19; --page:#0d0d0d;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --series-1:#3987e5; --series-1-soft:rgba(57,135,229,0.22);
+    --good:#0ca30c; --danger:#e66767;
+    --accent:#3987e5;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:var(--page); color:var(--ink-1); line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+header{
+  position:sticky;top:0;z-index:20;background:var(--surface-1);
+  border-bottom:1px solid var(--border);
+  padding:calc(8px + env(safe-area-inset-top)) 12px 0;
+}
+.head-row{display:flex;align-items:center;gap:8px}
+.head-row h1{font-size:18px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;gap:4px;margin-top:8px}
+.tab{
+  flex:1;text-align:center;padding:10px 4px 8px;font-size:14px;font-weight:600;
+  color:var(--ink-2);border:none;background:none;border-bottom:3px solid transparent;cursor:pointer;
+}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:640px;margin:0 auto;padding:12px}
+.view{display:none}
+.view.active{display:block}
+.card{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:12px;
+  padding:14px;margin-bottom:12px;
+}
+button{font-family:inherit}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--ink-1);
+  border-radius:10px;padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;
+}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn:active{opacity:.75}
+
+/* ---- calendar ---- */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-nav .btn{min-width:44px}
+.cal-title{font-size:17px;font-weight:700}
+table.cal{width:100%;border-collapse:collapse;table-layout:fixed}
+.cal th{font-size:11px;font-weight:600;color:var(--ink-muted);padding:4px 0}
+.cal th.sun{color:var(--danger)}
+.cal td{
+  height:56px;vertical-align:top;text-align:center;border-radius:8px;
+  cursor:pointer;padding:2px 0;border:2px solid transparent;
+}
+.cal td.out{opacity:.35}
+.cal td.today .d{background:var(--accent);color:#fff;border-radius:50%}
+.cal td.sel{border-color:var(--accent)}
+.cal .d{display:inline-block;min-width:22px;height:22px;line-height:22px;font-size:13px;font-weight:600}
+.cal .marks{font-size:10px;line-height:1.1;min-height:12px}
+.cal .km{
+  display:block;font-size:10px;font-weight:700;color:var(--ink-1);
+  background:var(--series-1-soft);border-radius:4px;margin:1px 2px 0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.month-sum{font-size:12px;color:var(--ink-2);margin-top:8px}
+
+/* ---- day panel ---- */
+.day-head{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px}
+.day-head h2{font-size:15px;font-weight:700}
+.rec{position:relative}
+.rec dl{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:14px}
+.rec dt{color:var(--ink-2)}
+.rec dd{font-weight:600;word-break:break-word}
+.rec .fe-line{margin-top:8px;padding-top:8px;border-top:1px dashed var(--grid);font-size:14px}
+.rec .fe-line b{color:var(--accent);font-size:16px}
+.rec .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.empty{color:var(--ink-muted);font-size:14px;text-align:center;padding:16px 0}
+
+/* ---- form modal ---- */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;
+  display:none;align-items:flex-end;justify-content:center;
+}
+.overlay.open{display:flex}
+.sheet{
+  background:var(--page);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+  border-radius:16px 16px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom));
+}
+.sheet h2{font-size:17px;margin-bottom:12px;text-align:center}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:4px}
+.field .unit-wrap{display:flex;align-items:center;gap:8px}
+.field .unit{color:var(--ink-2);font-size:14px;flex-shrink:0}
+input[type=number],input[type=text],input[type=date],textarea,select{
+  width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface-1);color:var(--ink-1);
+}
+input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+textarea{min-height:72px;resize:vertical}
+.seg{display:flex;border:1px solid var(--accent);border-radius:10px;overflow:hidden}
+.seg button{
+  flex:1;padding:10px;border:none;background:var(--surface-1);color:var(--accent);
+  font-size:14px;font-weight:600;cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.switch-row span{font-size:14px;font-weight:600;color:var(--ink-2)}
+.hint{font-size:12px;color:var(--ink-muted);margin-top:4px}
+.form-actions{display:flex;gap:10px;margin-top:16px}
+.form-actions .btn{flex:1}
+.autonote{font-size:12px;color:var(--good);margin-top:4px}
+
+/* ---- fuel view ---- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tile{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:12px}
+.tile .t-label{font-size:12px;color:var(--ink-2)}
+.tile .t-value{font-size:24px;font-weight:700;margin-top:2px}
+.tile .t-value small{font-size:13px;font-weight:600;color:var(--ink-2)}
+.chart-wrap{position:relative}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.tooltip{
+  position:absolute;pointer-events:none;background:var(--surface-1);border:1px solid var(--border);
+  border-radius:8px;padding:6px 10px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.18);
+  white-space:nowrap;display:none;z-index:5;
+}
+.tooltip b{font-size:13px}
+table.fe{width:100%;border-collapse:collapse;font-size:13px}
+table.fe th{color:var(--ink-2);font-weight:600;text-align:right;padding:6px 4px;border-bottom:1px solid var(--grid)}
+table.fe th:first-child,table.fe td:first-child{text-align:left}
+table.fe td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+table.fe td.kmpl{font-weight:700;color:var(--accent)}
+.method-note{font-size:12px;color:var(--ink-muted);margin-top:10px}
+
+/* ---- data view ---- */
+.view h3{font-size:15px;margin-bottom:8px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.map-grid{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:13px;margin:10px 0}
+.preview-wrap{overflow-x:auto;border:1px solid var(--grid);border-radius:8px;margin-top:8px}
+table.prev{border-collapse:collapse;font-size:12px;white-space:nowrap}
+table.prev th,table.prev td{padding:4px 8px;border-bottom:1px solid var(--grid);text-align:left}
+table.prev th{color:var(--ink-2);background:var(--series-1-soft)}
+.toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:var(--ink-1);color:var(--page);padding:10px 18px;border-radius:20px;
+  font-size:14px;font-weight:600;z-index:100;display:none;
+}
+/* iOS toggle */
+.tgl{position:relative;width:50px;height:30px;flex-shrink:0}
+.tgl input{opacity:0;width:100%;height:100%;position:absolute;margin:0;cursor:pointer;z-index:2}
+.tgl .knob{
+  position:absolute;inset:0;background:var(--axis);border-radius:15px;transition:background .15s;
+}
+.tgl .knob::after{
+  content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+  background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.tgl input:checked + .knob{background:var(--good)}
+.tgl input:checked + .knob::after{left:23px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <h1 id="appTitle">燃費ログ</h1>
+    <button class="btn small" id="btnAddTop">＋ 記録</button>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-view="cal">カレンダー</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="fuel">燃費</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="data">データ</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ calendar view ============ -->
+  <section class="view active" id="view-cal">
+    <div class="card">
+      <div class="cal-nav">
+        <button class="btn small" id="prevMonth" aria-label="前の月">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="btn small" id="nextMonth" aria-label="次の月">›</button>
+      </div>
+      <table class="cal" aria-label="月間カレンダー">
+        <thead><tr>
+          <th class="sun">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th>
+        </tr></thead>
+        <tbody id="calBody"></tbody>
+      </table>
+      <div class="month-sum" id="monthSum"></div>
+    </div>
+
+    <div class="day-head">
+      <h2 id="dayTitle"></h2>
+      <button class="btn small primary" id="btnAddDay">＋ この日に記録を追加</button>
+    </div>
+    <div id="dayRecords"></div>
+  </section>
+
+  <!-- ============ fuel view ============ -->
+  <section class="view" id="view-fuel">
+    <div class="tiles" id="tiles"></div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:4px">給油ごとの燃費</h3>
+      <div class="chart-wrap" id="chartWrap">
+        <div class="tooltip" id="chartTip"></div>
+      </div>
+      <div id="feTableWrap" style="margin-top:12px"></div>
+      <p class="method-note">
+        燃費は満タン法で自動計算しています：前回の満タン給油からの走行距離 ÷ 今回までの給油量。
+        走行前後のオドメーターが両方入力されている場合はその差を、無い場合は各記録の距離の合計を使います。
+        「満タンでない」給油は次の満タン給油までまとめて計算されます。
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ data view ============ -->
+  <section class="view" id="view-data">
+    <div class="card">
+      <h3>設定</h3>
+      <div class="field">
+        <label for="vehicleName">車両名（タイトルに表示）</label>
+        <input type="text" id="vehicleName" placeholder="例：社用車">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>CSV 書き出し</h3>
+      <p class="hint" style="margin-bottom:8px">全記録をCSVでダウンロードします（Excel対応）。</p>
+      <button class="btn primary" id="btnExportCsv">CSVをダウンロード</button>
+    </div>
+
+    <div class="card">
+      <h3>CSV 取り込み</h3>
+      <p class="hint" style="margin-bottom:8px">
+        今使っているアプリのCSV書き出しをそのまま読み込めます。列は自動判定しますが、下で修正もできます。
+      </p>
+      <div class="stack">
+        <input type="file" id="csvFile" accept=".csv,text/csv,text/plain">
+        <textarea id="csvPaste" placeholder="またはCSVの内容をここに貼り付け"></textarea>
+        <button class="btn" id="btnParseCsv">読み込んで確認</button>
+      </div>
+      <div id="importArea" style="display:none">
+        <div class="map-grid" id="mapGrid"></div>
+        <div class="preview-wrap"><table class="prev" id="prevTable"></table></div>
+        <p class="hint" id="importCount"></p>
+        <div class="form-actions">
+          <button class="btn primary" id="btnImportAppend">追加で取り込む</button>
+          <button class="btn danger" id="btnImportReplace">全置き換えで取り込む</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>バックアップ</h3>
+      <div class="stack">
+        <button class="btn" id="btnBackup">JSONバックアップを保存</button>
+        <input type="file" id="restoreFile" accept=".json,application/json">
+        <p class="hint">バックアップJSONを選ぶと復元します（現在のデータは置き換えられます）。</p>
+        <button class="btn danger" id="btnWipe">全データを削除</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>このツールについて</h3>
+      <p class="hint">
+        データはこの端末のブラウザ内（localStorage）にのみ保存されます。
+        機種変更やブラウザ変更の前にJSONバックアップを保存してください。
+        ホーム画面に追加するとアプリのように使えます。
+      </p>
+    </div>
+  </section>
+</main>
+
+<!-- ============ entry form ============ -->
+<div class="overlay" id="formOverlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <h2 id="formTitle">入力</h2>
+
+    <div class="field">
+      <label for="fOdoBefore">走行前の距離（オドメーター）</label>
+      <div class="unit-wrap">
+        <input type="number" id="fOdoBefore" inputmode="decimal" step="any" min="0">
+        <span class="unit">km</span>
+      </div>
+      <div class="autonote" id="odoAutoNote" style="display:none">前回の走行後の値を自動入力しました</div>
+    </div>
+
+    <div class="field">
+      <label for="fOdoAfter">走行後の距離（オドメーター）</label>
+      <div class="unit-wrap">
+        <input type="number" id="fOdoAfter" inputmode="decimal" step="any" min="0">
+        <span class="unit">km</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fDist">距離</label>
+      <div class="unit-wrap">
+        <input type="number" id="fDist" inputmode="decimal" step="any" min="0">
+        <span class="unit">km</span>
+      </div>
+      <div class="hint">走行前・走行後を入れると自動計算されます</div>
+    </div>
+
+    <div class="field">
+      <label>利用区分</label>
+      <div class="seg" id="segType">
+        <button type="button" data-type="business" aria-pressed="true">ビジネス</button>
+        <button type="button" data-type="private" aria-pressed="false">プライベート</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fMemo">メモ</label>
+      <textarea id="fMemo"></textarea>
+    </div>
+
+    <div class="field switch-row">
+      <span>オイル交換</span>
+      <label class="tgl"><input type="checkbox" id="fOil"><span class="knob"></span></label>
+    </div>
+
+    <div class="field">
+      <label for="fFuel">給油</label>
+      <div class="unit-wrap">
+        <input type="number" id="fFuel" inputmode="decimal" step="any" min="0">
+        <span class="unit">ℓ</span>
+      </div>
+    </div>
+
+    <div class="field switch-row" id="fullRow" style="display:none">
+      <span>満タン給油</span>
+      <label class="tgl"><input type="checkbox" id="fFull" checked><span class="knob"></span></label>
+    </div>
+
+    <div class="field">
+      <label for="fDate">日付</label>
+      <input type="date" id="fDate">
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" id="btnCancel">キャンセル</button>
+      <button class="btn primary" id="btnSave">保存</button>
+    </div>
+    <div class="form-actions" id="deleteRow" style="display:none">
+      <button class="btn danger" id="btnDelete">この記録を削除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================= storage ================= */
+const LS_KEY = "fuelLogV1";
+let state = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(s && Array.isArray(s.records)) return s;
+    }
+  }catch(e){}
+  return { vehicle:"", records:[], seq:1 };
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,"0");
+function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function fromYmd(s){ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
+function fmtDateJa(s){ const [y,m,d]=s.split("-").map(Number); return `${y}年 ${pad(m)}月 ${pad(d)}日`; }
+function fmtNum(n, digits=1){
+  if(n==null || !isFinite(n)) return "—";
+  return n.toLocaleString("ja-JP",{minimumFractionDigits:0, maximumFractionDigits:digits});
+}
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.style.display="block";
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",2200);
+}
+function sortedRecords(){
+  return [...state.records].sort((a,b)=> a.date===b.date ? (a.seq||0)-(b.seq||0) : (a.date<b.date?-1:1));
+}
+
+/* ================= fuel economy (満タン法) ================= */
+function fuelEvents(){
+  const recs = sortedRecords();
+  const evs = [];
+  let lastFullIdx = -1;
+  let pendingFuel = 0;
+  recs.forEach((r,i)=>{
+    if(!(r.fuel>0)) return;
+    pendingFuel += r.fuel;
+    const isFull = r.full !== false;
+    if(!isFull) return;              // 部分給油は次の満タンまで持ち越し
+    if(lastFullIdx >= 0){
+      const prev = recs[lastFullIdx];
+      let dist = null, method = "dist";
+      if(r.odoAfter>0 && prev.odoAfter>0 && r.odoAfter>prev.odoAfter){
+        dist = r.odoAfter - prev.odoAfter; method = "odo";
+      }else{
+        dist = 0;
+        for(let j=lastFullIdx+1;j<=i;j++) dist += (recs[j].dist||0);
+      }
+      evs.push({date:r.date, dist, fuel:pendingFuel,
+        kmpl: dist>0 ? dist/pendingFuel : null, method, baseline:false});
+    }else{
+      evs.push({date:r.date, dist:null, fuel:pendingFuel, kmpl:null, method:null, baseline:true});
+    }
+    lastFullIdx = i; pendingFuel = 0;
+  });
+  return evs;
+}
+
+/* ================= tabs ================= */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===t ? "true":"false"));
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    $("#view-"+t.dataset.view).classList.add("active");
+    if(t.dataset.view==="fuel") renderFuel();
+  });
+});
+
+/* ================= calendar ================= */
+let calYear, calMonth;           // month: 0-11
+let selectedDate = ymd(new Date());
+{ const t=new Date(); calYear=t.getFullYear(); calMonth=t.getMonth(); }
+
+$("#prevMonth").onclick = ()=>{ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); };
+$("#nextMonth").onclick = ()=>{ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); };
+
+function recordsByDate(){
+  const map = {};
+  sortedRecords().forEach(r=>{ (map[r.date] ||= []).push(r); });
+  return map;
+}
+
+function renderCalendar(){
+  $("#calTitle").textContent = `${calYear}年 ${calMonth+1}月`;
+  const byDate = recordsByDate();
+  const first = new Date(calYear, calMonth, 1);
+  const start = new Date(first); start.setDate(1 - first.getDay());
+  const todayS = ymd(new Date());
+  const body = $("#calBody"); body.innerHTML = "";
+  let cur = new Date(start);
+  for(let w=0; w<6; w++){
+    const tr = document.createElement("tr");
+    for(let d=0; d<7; d++){
+      const s = ymd(cur);
+      const td = document.createElement("td");
+      const inMonth = cur.getMonth()===calMonth;
+      if(!inMonth) td.classList.add("out");
+      if(s===todayS) td.classList.add("today");
+      if(s===selectedDate) td.classList.add("sel");
+      const recs = byDate[s]||[];
+      const dist = recs.reduce((a,r)=>a+(r.dist||0),0);
+      const hasFuel = recs.some(r=>r.fuel>0);
+      const hasOil = recs.some(r=>r.oil);
+      td.innerHTML =
+        `<span class="marks">${hasFuel?"⛽":""}${hasOil?"🔧":""}</span><br>`+
+        `<span class="d">${cur.getDate()}</span>`+
+        (dist>0?`<span class="km">${fmtNum(dist,1)}</span>`:"");
+      td.addEventListener("click", ()=>{ selectedDate=s; renderCalendar(); renderDay(); });
+      tr.appendChild(td);
+      cur.setDate(cur.getDate()+1);
+    }
+    body.appendChild(tr);
+    if(cur.getMonth()!==calMonth && cur.getDay()===0 && cur > first) break;
+  }
+  // 月間サマリー
+  const mPrefix = `${calYear}-${pad(calMonth+1)}`;
+  let km=0,biz=0,priv=0,fuel=0;
+  state.records.forEach(r=>{
+    if(!r.date.startsWith(mPrefix)) return;
+    km += r.dist||0;
+    if(r.type==="private") priv += r.dist||0; else biz += r.dist||0;
+    fuel += r.fuel||0;
+  });
+  $("#monthSum").textContent =
+    `この月の走行 ${fmtNum(km,1)} km（ビジネス ${fmtNum(biz,1)} / プライベート ${fmtNum(priv,1)}）・給油 ${fmtNum(fuel,2)} ℓ`;
+}
+
+function renderDay(){
+  $("#dayTitle").textContent = fmtDateJa(selectedDate);
+  const wrap = $("#dayRecords"); wrap.innerHTML="";
+  const recs = (recordsByDate()[selectedDate]||[]);
+  if(recs.length===0){
+    wrap.innerHTML = `<div class="card empty">この日の記録はありません</div>`;
+    return;
+  }
+  // 燃費イベントを日付で引けるように
+  const evByDate = {};
+  fuelEvents().forEach(ev=>{ (evByDate[ev.date] ||= []).push(ev); });
+  recs.forEach(r=>{
+    const card = document.createElement("div");
+    card.className = "card rec";
+    let html = `<dl>`;
+    html += `<dt>距離</dt><dd>${fmtNum(r.dist,1)} km</dd>`;
+    html += `<dt>利用区分</dt><dd>${r.type==="private"?"プライベート":"ビジネス"}</dd>`;
+    if(r.odoBefore>0) html += `<dt>走行前</dt><dd>${fmtNum(r.odoBefore,1)} km</dd>`;
+    if(r.odoAfter>0)  html += `<dt>走行後</dt><dd>${fmtNum(r.odoAfter,1)} km</dd>`;
+    if(r.fuel>0) html += `<dt>給油</dt><dd>${fmtNum(r.fuel,2)} ℓ${r.full===false?"（満タンでない）":""}</dd>`;
+    if(r.oil) html += `<dt>オイル交換</dt><dd>あり</dd>`;
+    if(r.memo) html += `<dt>メモ</dt><dd>${escapeHtml(r.memo)}</dd>`;
+    html += `</dl>`;
+    if(r.fuel>0){
+      const evs = evByDate[r.date]||[];
+      const ev = evs[0];
+      if(ev && !ev.baseline && ev.kmpl!=null){
+        html += `<div class="fe-line">燃費 <b>${fmtNum(ev.kmpl,2)} km/ℓ</b>`+
+                `（${fmtNum(ev.dist,1)} km ÷ ${fmtNum(ev.fuel,2)} ℓ）</div>`;
+      }else if(ev && ev.baseline){
+        html += `<div class="fe-line">燃費計算の基準になる給油です（次の給油から燃費が出ます）</div>`;
+      }
+    }
+    html += `<div class="actions">
+      <button class="btn small" data-edit="${r.id}">✏️ 編集</button>
+      <button class="btn small danger" data-del="${r.id}">🗑 削除</button>
+    </div>`;
+    card.innerHTML = html;
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openForm(b.dataset.edit));
+  wrap.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    if(confirm("この記録を削除しますか？")){
+      state.records = state.records.filter(r=>r.id!==b.dataset.del);
+      save(); refresh(); toast("削除しました");
+    }
+  });
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ================= form ================= */
+let editingId = null;
+let formType = "business";
+
+$("#btnAddTop").onclick = ()=>openForm(null);
+$("#btnAddDay").onclick = ()=>openForm(null);
+$("#btnCancel").onclick = closeForm;
+$("#formOverlay").addEventListener("click", e=>{ if(e.target===e.currentTarget) closeForm(); });
+
+$("#segType").querySelectorAll("button").forEach(b=>{
+  b.onclick = ()=>{
+    formType = b.dataset.type;
+    $("#segType").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false"));
+  };
+});
+
+function num(el){ const v=parseFloat(el.value); return isFinite(v)?v:null; }
+function autoDist(){
+  const b=num($("#fOdoBefore")), a=num($("#fOdoAfter"));
+  if(b!=null && a!=null && a>=b) $("#fDist").value = Math.round((a-b)*10)/10;
+}
+$("#fOdoBefore").addEventListener("input", autoDist);
+$("#fOdoAfter").addEventListener("input", autoDist);
+$("#fFuel").addEventListener("input", ()=>{
+  $("#fullRow").style.display = num($("#fFuel"))>0 ? "flex" : "none";
+});
+
+function lastOdoBefore(dateS, excludeId){
+  // dateS 以前（同日含む・自分は除く）で一番あとの走行後オドメーター
+  const recs = sortedRecords().filter(r=>r.id!==excludeId && r.date<=dateS && r.odoAfter>0);
+  return recs.length ? recs[recs.length-1].odoAfter : null;
+}
+
+function openForm(id){
+  editingId = id;
+  const isEdit = !!id;
+  $("#deleteRow").style.display = isEdit ? "flex" : "none";
+  $("#odoAutoNote").style.display = "none";
+  let r = isEdit ? state.records.find(x=>x.id===id) : null;
+  if(isEdit && !r){ editingId=null; return; }
+  if(!r){
+    r = { date:selectedDate, odoBefore:null, odoAfter:null, dist:null,
+          type:"business", memo:"", oil:false, fuel:null, full:true };
+    const prev = lastOdoBefore(selectedDate, null);
+    if(prev!=null){ r.odoBefore = prev; }
+  }
+  $("#fDate").value = r.date;
+  $("#fOdoBefore").value = r.odoBefore ?? "";
+  $("#fOdoAfter").value = r.odoAfter ?? "";
+  $("#fDist").value = r.dist ?? "";
+  $("#fMemo").value = r.memo || "";
+  $("#fOil").checked = !!r.oil;
+  $("#fFuel").value = r.fuel ?? "";
+  $("#fFull").checked = r.full !== false;
+  $("#fullRow").style.display = (r.fuel>0) ? "flex" : "none";
+  formType = r.type==="private" ? "private" : "business";
+  $("#segType").querySelectorAll("button").forEach(x=>
+    x.setAttribute("aria-pressed", x.dataset.type===formType?"true":"false"));
+  if(!isEdit && r.odoBefore!=null) $("#odoAutoNote").style.display = "block";
+  $("#formOverlay").classList.add("open");
+}
+function closeForm(){ $("#formOverlay").classList.remove("open"); editingId=null; }
+
+$("#btnSave").onclick = ()=>{
+  const date = $("#fDate").value;
+  if(!date){ alert("日付を入力してください"); return; }
+  const odoBefore = num($("#fOdoBefore"));
+  const odoAfter  = num($("#fOdoAfter"));
+  let dist = num($("#fDist"));
+  if(dist==null && odoBefore!=null && odoAfter!=null && odoAfter>=odoBefore)
+    dist = Math.round((odoAfter-odoBefore)*10)/10;
+  const rec = {
+    id: editingId || (Date.now().toString(36)+Math.random().toString(36).slice(2,7)),
+    seq: editingId ? (state.records.find(r=>r.id===editingId)?.seq ?? state.seq++) : state.seq++,
+    date,
+    odoBefore, odoAfter,
+    dist: dist ?? 0,
+    type: formType,
+    memo: $("#fMemo").value.trim(),
+    oil: $("#fOil").checked,
+    fuel: num($("#fFuel")),
+    full: $("#fFull").checked
+  };
+  if(editingId){
+    state.records = state.records.map(r=>r.id===editingId?rec:r);
+  }else{
+    state.records.push(rec);
+  }
+  save();
+  selectedDate = date;
+  const d = fromYmd(date); calYear=d.getFullYear(); calMonth=d.getMonth();
+  closeForm(); refresh(); toast("保存しました");
+};
+
+$("#btnDelete").onclick = ()=>{
+  if(editingId && confirm("この記録を削除しますか？")){
+    state.records = state.records.filter(r=>r.id!==editingId);
+    save(); closeForm(); refresh(); toast("削除しました");
+  }
+};
+
+/* ================= fuel view ================= */
+function renderFuel(){
+  const evs = fuelEvents();
+  const valid = evs.filter(e=>e.kmpl!=null);
+  const totalDist = valid.reduce((a,e)=>a+e.dist,0);
+  const totalFuel = valid.reduce((a,e)=>a+e.fuel,0);
+  const avg = totalFuel>0 ? totalDist/totalFuel : null;
+  const last = valid.length ? valid[valid.length-1].kmpl : null;
+  const allDist = state.records.reduce((a,r)=>a+(r.dist||0),0);
+  const allFuel = state.records.reduce((a,r)=>a+(r.fuel||0),0);
+
+  $("#tiles").innerHTML = [
+    ["平均燃費", avg!=null?fmtNum(avg,2):"—", "km/ℓ"],
+    ["直近の燃費", last!=null?fmtNum(last,2):"—", "km/ℓ"],
+    ["総走行距離", fmtNum(allDist,0), "km"],
+    ["総給油量", fmtNum(allFuel,1), "ℓ"],
+  ].map(([l,v,u])=>`<div class="tile"><div class="t-label">${l}</div><div class="t-value">${v} <small>${u}</small></div></div>`).join("");
+
+  renderChart(valid, avg);
+  renderFeTable(evs);
+}
+
+function renderChart(valid, avg){
+  const wrap = $("#chartWrap");
+  wrap.querySelectorAll("svg, .empty").forEach(e=>e.remove());
+  if(valid.length===0){
+    wrap.insertAdjacentHTML("beforeend", `<div class="empty">給油記録が2回以上たまると燃費グラフが表示されます</div>`);
+    return;
+  }
+  const data = valid.slice(-20);
+  const W=600, H=260, padL=44, padR=10, padT=18, padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const maxV = Math.max(...data.map(d=>d.kmpl), avg||0)*1.15;
+  // nice ticks
+  const rawStep = maxV/4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = [1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=rawStep) || rawStep;
+  const yMax = Math.ceil(maxV/step)*step;
+  const y = v => padT + plotH*(1 - v/yMax);
+  const bw = Math.min(28, plotW/data.length*0.6);
+  const xc = i => padL + plotW*(i+0.5)/data.length;
+
+  let g = "";
+  for(let v=0; v<=yMax+1e-9; v+=step){
+    g += `<line x1="${padL}" y1="${y(v)}" x2="${W-padR}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<text x="${padL-6}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-muted)" style="font-variant-numeric:tabular-nums">${fmtNum(v,1)}</text>`;
+  }
+  let bars="", labels="";
+  data.forEach((d,i)=>{
+    const bx = xc(i)-bw/2, by = y(d.kmpl), bh = (H-padB)-by;
+    bars += `<path d="M${bx},${H-padB} L${bx},${by+4} Q${bx},${by} ${bx+4},${by} L${bx+bw-4},${by} Q${bx+bw},${by} ${bx+bw},${by+4} L${bx+bw},${H-padB} Z" fill="var(--series-1)" data-i="${i}"/>`;
+    // タップ用の広い透明ヒット領域
+    bars += `<rect x="${padL+plotW*i/data.length}" y="${padT}" width="${plotW/data.length}" height="${plotH}" fill="transparent" data-i="${i}"/>`;
+    const [,m,dd] = d.date.split("-");
+    const every = Math.ceil(data.length/8);
+    if(i%every===0 || i===data.length-1)
+      labels += `<text x="${xc(i)}" y="${H-padB+16}" text-anchor="middle" font-size="10" fill="var(--ink-muted)">${+m}/${+dd}</text>`;
+  });
+  // 直近バーの直接ラベル
+  const lastD = data[data.length-1];
+  labels += `<text x="${xc(data.length-1)}" y="${y(lastD.kmpl)-6}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink-1)">${fmtNum(lastD.kmpl,1)}</text>`;
+  let avgLine="";
+  if(avg!=null){
+    avgLine = `<line x1="${padL}" y1="${y(avg)}" x2="${W-padR}" y2="${y(avg)}" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/>`+
+      `<text x="${W-padR}" y="${y(avg)-5}" text-anchor="end" font-size="10" fill="var(--ink-2)">平均 ${fmtNum(avg,2)}</text>`;
+  }
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  svg.setAttribute("role","img");
+  svg.setAttribute("aria-label","給油ごとの燃費（km/ℓ）の推移");
+  svg.innerHTML = g +
+    `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--axis)" stroke-width="1"/>` +
+    bars + avgLine + labels;
+  wrap.appendChild(svg);
+
+  const tip = $("#chartTip");
+  function showTip(i, clientX){
+    const d = data[i];
+    tip.innerHTML = `${fmtDateJa(d.date)}<br><b>${fmtNum(d.kmpl,2)} km/ℓ</b><br>${fmtNum(d.dist,1)} km ／ ${fmtNum(d.fuel,2)} ℓ`;
+    tip.style.display="block";
+    const wr = wrap.getBoundingClientRect();
+    let lx = clientX - wr.left + 12;
+    tip.style.top = "8px";
+    tip.style.left = "0px";
+    const tw = tip.offsetWidth;
+    if(lx + tw > wr.width) lx = Math.max(0, clientX - wr.left - tw - 12);
+    tip.style.left = lx+"px";
+  }
+  svg.addEventListener("pointermove", e=>{
+    const t = e.target.closest("[data-i]");
+    if(t) showTip(+t.dataset.i, e.clientX); else tip.style.display="none";
+  });
+  svg.addEventListener("pointerleave", ()=> tip.style.display="none");
+}
+
+function renderFeTable(evs){
+  const wrap = $("#feTableWrap");
+  if(evs.length===0){ wrap.innerHTML=""; return; }
+  const rows = [...evs].reverse().map(e=>{
+    if(e.baseline)
+      return `<tr><td>${e.date.replaceAll("-","/")}</td><td>—</td><td>${fmtNum(e.fuel,2)}</td><td class="kmpl">基準</td></tr>`;
+    return `<tr><td>${e.date.replaceAll("-","/")}</td><td>${fmtNum(e.dist,1)}</td><td>${fmtNum(e.fuel,2)}</td><td class="kmpl">${e.kmpl!=null?fmtNum(e.kmpl,2):"—"}</td></tr>`;
+  }).join("");
+  wrap.innerHTML = `<table class="fe">
+    <thead><tr><th>給油日</th><th>区間距離 km</th><th>給油 ℓ</th><th>燃費 km/ℓ</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+/* ================= CSV ================= */
+function parseCsv(text){
+  text = text.replace(/^﻿/,"");
+  const rows=[]; let row=[], cell="", inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else inQ=false; }
+      else cell+=c;
+    }else{
+      if(c==='"') inQ=true;
+      else if(c===",") { row.push(cell); cell=""; }
+      else if(c==="\n"){ row.push(cell); rows.push(row); row=[]; cell=""; }
+      else if(c==="\r"){ /* skip */ }
+      else cell+=c;
+    }
+  }
+  if(cell!=="" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+function csvCell(v){
+  const s = String(v ?? "");
+  return /[",\r\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}
+function parseNumLoose(s){
+  if(s==null) return null;
+  const v = parseFloat(String(s).replace(/[,\s]/g,"").replace(/[^\d.\-]/g,""));
+  return isFinite(v)?v:null;
+}
+function parseDateLoose(s){
+  if(!s) return null;
+  s = String(s).trim();
+  let m = s.match(/(\d{4})[\/\-年\.](\d{1,2})[\/\-月\.](\d{1,2})/);
+  if(m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;
+  const d = new Date(s);
+  return isNaN(d) ? null : ymd(d);
+}
+function parseBoolLoose(s){
+  if(s==null) return false;
+  s = String(s).trim().toLowerCase();
+  return ["1","true","yes","on","○","◯","あり","はい","済","y"].includes(s) || s.includes("交換");
+}
+
+const FIELDS = [
+  ["date","日付（必須）",["日付","date","年月日","day"]],
+  ["dist","距離",["距離","distance","走行距離","km"]],
+  ["odoBefore","走行前",["走行前","before","開始","start","出発"]],
+  ["odoAfter","走行後",["走行後","after","終了","end","到着"]],
+  ["type","利用区分",["区分","利用","type","category","用途"]],
+  ["memo","メモ",["メモ","memo","note","備考","コメント"]],
+  ["oil","オイル交換",["オイル","oil"]],
+  ["fuel","給油",["給油","fuel","燃料","ガソリン","リットル","litre","liter"]],
+  ["full","満タン",["満タン","full"]],
+];
+let importParsed = null; // {header, rows}
+
+$("#csvFile").addEventListener("change", e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{ $("#csvPaste").value = rd.result; prepareImport(rd.result); };
+  rd.readAsText(f);
+});
+$("#btnParseCsv").onclick = ()=>{
+  const t = $("#csvPaste").value.trim();
+  if(!t){ alert("CSVファイルを選ぶか、内容を貼り付けてください"); return; }
+  prepareImport(t);
+};
+
+function prepareImport(text){
+  const rows = parseCsv(text);
+  if(rows.length<2){ alert("データ行が見つかりませんでした（ヘッダー行＋1行以上が必要です）"); return; }
+  const header = rows[0].map(h=>h.trim());
+  importParsed = { header, rows: rows.slice(1) };
+  // 列マッピングUI
+  const grid = $("#mapGrid"); grid.innerHTML="";
+  FIELDS.forEach(([key,label,kws])=>{
+    const sel = document.createElement("select");
+    sel.dataset.field = key;
+    sel.innerHTML = `<option value="">（使わない）</option>` +
+      header.map((h,i)=>`<option value="${i}">${escapeHtml(h||("列"+(i+1)))}</option>`).join("");
+    const hit = header.findIndex(h=>kws.some(k=>h.toLowerCase().includes(k.toLowerCase())));
+    if(hit>=0) sel.value = String(hit);
+    const lab = document.createElement("label");
+    lab.textContent = label;
+    grid.appendChild(lab); grid.appendChild(sel);
+    sel.addEventListener("change", renderImportPreview);
+  });
+  renderImportPreview();
+  $("#importArea").style.display = "block";
+}
+function currentMapping(){
+  const map = {};
+  $("#mapGrid").querySelectorAll("select").forEach(s=>{
+    if(s.value!=="") map[s.dataset.field] = +s.value;
+  });
+  return map;
+}
+function rowToRecord(row, map){
+  const get = k => map[k]!=null ? row[map[k]] : null;
+  const date = parseDateLoose(get("date"));
+  if(!date) return null;
+  const typeRaw = (get("type")||"").toLowerCase();
+  const odoBefore = parseNumLoose(get("odoBefore"));
+  const odoAfter  = parseNumLoose(get("odoAfter"));
+  let dist = parseNumLoose(get("dist"));
+  if(dist==null && odoBefore!=null && odoAfter!=null && odoAfter>=odoBefore)
+    dist = Math.round((odoAfter-odoBefore)*10)/10;
+  return {
+    id: Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    seq: state.seq++,
+    date,
+    odoBefore, odoAfter,
+    dist: dist ?? 0,
+    type: (typeRaw.includes("プライ")||typeRaw.includes("private")||typeRaw.includes("個人")) ? "private" : "business",
+    memo: (get("memo")||"").trim(),
+    oil: parseBoolLoose(get("oil")),
+    fuel: parseNumLoose(get("fuel")),
+    full: map.full!=null ? parseBoolLoose(get("full")) || String(get("full")).trim()==="" : true
+  };
+}
+function renderImportPreview(){
+  if(!importParsed) return;
+  const map = currentMapping();
+  if(map.date==null){
+    $("#prevTable").innerHTML = "";
+    $("#importCount").textContent = "「日付」の列を選んでください。";
+    return;
+  }
+  const recs = importParsed.rows.map(r=>rowToRecord(r,map)).filter(Boolean);
+  const head = ["日付","走行前","走行後","距離","区分","給油","メモ"];
+  const body = recs.slice(0,5).map(r=>
+    `<tr><td>${r.date}</td><td>${r.odoBefore??""}</td><td>${r.odoAfter??""}</td><td>${r.dist}</td>`+
+    `<td>${r.type==="private"?"プライベート":"ビジネス"}</td><td>${r.fuel??""}</td><td>${escapeHtml(r.memo)}</td></tr>`).join("");
+  $("#prevTable").innerHTML = `<thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody>`;
+  $("#importCount").textContent = `${recs.length} 件の記録を取り込めます（先頭5件をプレビュー表示）。`;
+}
+function doImport(replace){
+  if(!importParsed) return;
+  const map = currentMapping();
+  if(map.date==null){ alert("「日付」の列を選んでください"); return; }
+  const recs = importParsed.rows.map(r=>rowToRecord(r,map)).filter(Boolean);
+  if(recs.length===0){ alert("取り込める記録がありませんでした"); return; }
+  if(replace && !confirm(`現在の ${state.records.length} 件をすべて削除して、${recs.length} 件で置き換えます。よろしいですか？`)) return;
+  if(replace) state.records = recs; else state.records.push(...recs);
+  save();
+  importParsed=null; $("#importArea").style.display="none"; $("#csvPaste").value=""; $("#csvFile").value="";
+  refresh(); toast(`${recs.length} 件を取り込みました`);
+}
+$("#btnImportAppend").onclick = ()=>doImport(false);
+$("#btnImportReplace").onclick = ()=>doImport(true);
+
+$("#btnExportCsv").onclick = ()=>{
+  const head = ["日付","走行前(km)","走行後(km)","距離(km)","利用区分","メモ","オイル交換","給油(L)","満タン"];
+  const lines = [head.join(",")];
+  sortedRecords().forEach(r=>{
+    lines.push([
+      r.date, r.odoBefore??"", r.odoAfter??"", r.dist??"",
+      r.type==="private"?"プライベート":"ビジネス",
+      csvCell(r.memo), r.oil?"あり":"", r.fuel??"", (r.fuel>0 ? (r.full!==false?"満タン":"部分") : "")
+    ].join(","));
+  });
+  download("﻿"+lines.join("\r\n"), `fuel-log_${ymd(new Date())}.csv`, "text/csv");
+};
+
+/* ================= backup / settings ================= */
+function download(content, name, mime){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download = name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+$("#btnBackup").onclick = ()=> download(JSON.stringify(state,null,1), `fuel-log-backup_${ymd(new Date())}.json`, "application/json");
+$("#restoreFile").addEventListener("change", e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const s = JSON.parse(rd.result);
+      if(!s || !Array.isArray(s.records)) throw 0;
+      if(!confirm(`バックアップ（${s.records.length} 件）で現在のデータを置き換えます。よろしいですか？`)) return;
+      state = s; save(); refresh(); toast("復元しました");
+    }catch(err){ alert("バックアップファイルを読み込めませんでした"); }
+    e.target.value="";
+  };
+  rd.readAsText(f);
+});
+$("#btnWipe").onclick = ()=>{
+  if(confirm("すべての記録を削除します。よろしいですか？") && confirm("本当に削除しますか？（元に戻せません）")){
+    state = { vehicle: state.vehicle, records: [], seq: 1 };
+    save(); refresh(); toast("削除しました");
+  }
+};
+$("#vehicleName").addEventListener("input", e=>{
+  state.vehicle = e.target.value.trim();
+  save(); applyTitle();
+});
+function applyTitle(){
+  $("#appTitle").textContent = state.vehicle ? `${state.vehicle}｜燃費ログ` : "燃費ログ";
+}
+
+/* ================= boot ================= */
+function refresh(){ renderCalendar(); renderDay(); if($("#view-fuel").classList.contains("active")) renderFuel(); }
+$("#vehicleName").value = state.vehicle || "";
+applyTitle();
+refresh();
+</script>
+</body>
+</html>
