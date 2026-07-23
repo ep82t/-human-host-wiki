@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理者 | d8-posting</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; font-size: 14px; background: #f5f5f5; }
+
+/* ヘッダー */
+#header {
+  background: #1a237e; color: #fff;
+  padding: 10px 16px; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 10px;
+}
+#header h1 { font-size: 16px; font-weight: bold; flex: 0 0 auto; }
+.filter-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.filter-group label { font-size: 12px; }
+select, button {
+  padding: 4px 8px; border: none; border-radius: 4px;
+  font-size: 13px; cursor: pointer;
+}
+select { background: #fff; color: #333; }
+button { background: #4caf50; color: #fff; }
+button:hover { background: #388e3c; }
+#btn-pdf { background: #f44336; }
+#btn-pdf:hover { background: #c62828; }
+
+/* 進捗バー */
+#progress-bar-wrap {
+  background: rgba(255,255,255,0.2); border-radius: 6px;
+  height: 22px; flex: 1 1 200px; min-width: 180px;
+  position: relative; overflow: hidden;
+}
+#progress-bar-fill {
+  background: linear-gradient(90deg, #69f0ae, #00e676);
+  height: 100%; transition: width 0.6s ease;
+}
+#progress-label {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: bold; color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* メインレイアウト */
+#main { display: flex; height: calc(100vh - 52px); }
+
+/* 地図 */
+#map { flex: 1; min-width: 0; }
+
+/* 右パネル */
+#side {
+  flex: 0 0 360px; display: flex; flex-direction: column;
+  background: #fff; border-left: 1px solid #ddd;
+}
+
+/* タブ */
+.tab-bar {
+  display: flex; border-bottom: 2px solid #e0e0e0;
+  background: #fafafa;
+}
+.tab-btn {
+  flex: 1; padding: 10px 4px; background: none; border: none;
+  border-bottom: 3px solid transparent; cursor: pointer;
+  font-size: 12px; color: #555;
+}
+.tab-btn.active {
+  color: #1a237e; border-bottom-color: #1a237e; font-weight: bold;
+}
+.tab-content { display: none; flex: 1; overflow-y: auto; }
+.tab-content.active { display: flex; flex-direction: column; }
+
+/* エリア一覧タブ */
+#area-search {
+  padding: 8px; border-bottom: 1px solid #eee;
+  display: flex; gap: 6px;
+}
+#area-search input {
+  flex: 1; padding: 6px 8px; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 13px;
+}
+#area-list { overflow-y: auto; flex: 1; }
+.area-item {
+  display: flex; align-items: center; padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0; cursor: pointer;
+}
+.area-item:hover { background: #e8f0fe; }
+.area-item.selected { background: #d0e4ff; }
+.area-status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 8px; flex-shrink: 0;
+}
+.area-name { flex: 1; font-size: 13px; }
+.area-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; }
+.area-households { font-size: 11px; color: #888; }
+.area-dist-info { font-size: 11px; color: #e65100; font-weight: bold; }
+
+/* 配布ログタブ */
+#log-list { overflow-y: auto; flex: 1; }
+.log-item {
+  padding: 8px 12px; border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+.log-datetime { color: #888; margin-bottom: 2px; }
+.log-body { color: #333; }
+
+/* 新チラシ自動作成の受信ログ行（赤・太字で強調） */
+.log-item.log-new-flyer {
+  background: #fff4f4;
+  border-left: 4px solid #d32f2f;
+}
+.log-new-flyer .log-body { color: #d32f2f; font-weight: bold; }
+.log-new-flyer-badge {
+  display: inline-block; color: #fff; background: #d32f2f;
+  font-weight: bold; font-size: 10px; border-radius: 3px;
+  padding: 1px 6px; margin-right: 6px;
+}
+/* 受信ログの「もっと見る／全期間」フッター */
+.log-more { padding: 10px 12px; text-align: center; }
+.log-more button {
+  margin: 0 4px; padding: 5px 12px; font-size: 12px;
+  border: 1px solid #90caf9; background: #e3f2fd; color: #1565c0;
+  border-radius: 4px; cursor: pointer;
+}
+.log-more button:hover { background: #bbdefb; }
+.log-more-end { color: #888; font-size: 11px; }
+
+/* 店舗タブ */
+#store-list { overflow-y: auto; flex: 1; }
+.store-item {
+  padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+.store-item-row { display: flex; align-items: flex-start; gap: 6px; }
+.store-item-body { flex: 1; cursor: pointer; }
+.store-item-body:hover { opacity: 0.8; }
+.store-name { font-size: 13px; font-weight: bold; color: #1a237e; margin-bottom: 3px; }
+.store-meta { color: #555; }
+.store-count { color: #e65100; font-weight: bold; }
+.btn-store-edit {
+  flex-shrink: 0; padding: 3px 8px; font-size: 11px;
+  background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9;
+  border-radius: 4px; cursor: pointer; white-space: nowrap; margin-top: 2px;
+}
+.btn-store-edit:hover { background: #bbdefb; }
+.store-edit-form {
+  margin-top: 8px; padding: 8px; background: #f5f5f5;
+  border-radius: 6px; display: none;
+}
+.store-edit-form.open { display: block; }
+.store-edit-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.store-edit-row label { width: 60px; font-size: 11px; color: #555; flex-shrink: 0; }
+.store-edit-row input, .store-edit-row select {
+  flex: 1; padding: 4px 6px; font-size: 12px;
+  border: 1px solid #ccc; border-radius: 4px;
+}
+.btn-store-save {
+  width: 100%; padding: 6px; font-size: 12px;
+  background: #1a237e; color: #fff; border-radius: 4px; cursor: pointer;
+}
+.btn-store-save:hover { background: #283593; }
+
+/* 詳細パネル */
+#detail-panel {
+  border-top: 2px solid #1a237e; background: #fafafa;
+  padding: 12px; font-size: 13px;
+}
+#detail-panel h3 { font-size: 14px; margin-bottom: 10px; color: #1a237e; }
+.detail-row {
+  display: flex; align-items: center; margin-bottom: 8px; gap: 8px;
+}
+.detail-row label { width: 80px; font-weight: bold; flex-shrink: 0; }
+.detail-row select,
+.detail-row input {
+  flex: 1; padding: 5px 8px; border: 1px solid #ccc;
+  border-radius: 4px; font-size: 13px;
+}
+#btn-save-area {
+  width: 100%; padding: 8px; margin-top: 4px;
+  background: #1a237e; color: #fff; font-size: 14px;
+  border-radius: 4px;
+}
+#btn-save-area:hover { background: #283593; }
+#detail-message { font-size: 12px; margin-top: 6px; text-align: center; }
+
+/* 進捗色（世帯数ベース5段階オレンジ） */
+.progress-0  { background: #9e9e9e; }           /* 0%    グレー    */
+.progress-1  { background: #FFE0B2; }           /* ~20%  最薄オレンジ */
+.progress-2  { background: #FFCC80; }           /* ~40%  薄オレンジ   */
+.progress-3  { background: #FFA726; }           /* ~60%  中オレンジ   */
+.progress-4  { background: #F57C00; }           /* ~80%  濃オレンジ   */
+.progress-5  { background: #BF360C; }           /* 80%+  最濃オレンジ（完了）*/
+
+/* ヘッダー内設定ボタン */
+#btn-settings {
+  background: rgba(255,255,255,0.2); color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 4px 10px; border-radius: 4px;
+  font-size: 13px; flex-shrink: 0;
+}
+#btn-settings:hover { background: rgba(255,255,255,0.35); }
+
+/* マンションボタン */
+#btn-mansion {
+  background: rgba(255,255,255,0.15); color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 4px 10px; border-radius: 4px;
+  font-size: 13px; flex-shrink: 0;
+}
+#btn-mansion.active { background: #e65100; border-color: #e65100; }
+#btn-mansion:hover  { background: rgba(255,255,255,0.3); }
+#btn-mansion.active:hover { background: #bf360c; }
+
+/* マンションポップアップ */
+#mansion-popup-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 5000;
+  align-items: flex-end; justify-content: center;
+}
+#mansion-popup-overlay.show { display: flex; }
+#mansion-popup-form {
+  background: #fff; width: 100%; max-width: 480px;
+  border-radius: 16px 16px 0 0; padding: 20px 16px 24px;
+  max-height: 85vh; overflow-y: auto;
+}
+#mansion-popup-form h2 {
+  font-size: 15px; font-weight: bold; margin-bottom: 14px;
+  color: #e65100; display: flex; justify-content: space-between; align-items: center;
+}
+.mf-row { margin-bottom: 12px; }
+.mf-row label { display: block; font-size: 12px; font-weight: bold; color: #555; margin-bottom: 4px; }
+.mf-row input, .mf-row select, .mf-row textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid #ccc;
+  border-radius: 6px; font-size: 14px; font-family: inherit;
+}
+.mf-row textarea { resize: vertical; min-height: 56px; }
+.m-status-btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.m-status-btn {
+  flex: 1 1 calc(50% - 8px); padding: 10px 6px;
+  border: 2px solid #ddd; border-radius: 8px;
+  background: #fafafa; cursor: pointer; font-size: 13px; text-align: center;
+}
+.m-status-btn.selected { border-width: 3px; }
+.m-status-btn[data-val="配布OK"].selected         { border-color: #4caf50; background: #e8f5e9; }
+.m-status-btn[data-val="オートロックNG"].selected  { border-color: #1976d2; background: #e3f2fd; }
+.m-status-btn[data-val="管理人NG"].selected        { border-color: #f44336; background: #ffebee; }
+.m-status-btn[data-val="お断り貼り紙あり"].selected { border-color: #ff9800; background: #fff3e0; }
+.m-type-btn-group { display: flex; gap: 8px; margin-top: 8px; }
+.m-type-btn {
+  flex: 1; padding: 7px; border: 2px solid #ddd; border-radius: 6px;
+  background: #fafafa; cursor: pointer; font-size: 12px; text-align: center;
+}
+.m-type-btn.selected { border-color: #9c27b0; background: #f3e5f5; }
+#m-count-row { display: none; }
+#m-count-row.show { display: block; }
+#btn-mansion-submit {
+  width: 100%; padding: 13px; background: #e65100;
+  color: #fff; font-size: 15px; font-weight: bold;
+  border-radius: 8px; margin-top: 8px; border: none; cursor: pointer;
+}
+#btn-mansion-submit:hover { background: #bf360c; }
+.last-visit-badge {
+  display: inline-block; background: #fff3e0; border: 1px solid #ff9800;
+  border-radius: 4px; padding: 2px 6px; font-size: 11px; color: #e65100; margin-top: 6px;
+}
+
+/* マンションタブ一覧 */
+#mansion-list { overflow-y: auto; flex: 1; }
+.mansion-item {
+  padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+  font-size: 12px; cursor: pointer;
+}
+.mansion-item:hover { background: #fff3e0; }
+.mansion-name { font-size: 13px; font-weight: bold; color: #e65100; margin-bottom: 2px; }
+.mansion-meta { color: #555; }
+.mansion-status-dot {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%; margin-right: 5px;
+}
+
+/* ピンモードオーバーレイ */
+#mansion-pin-mode {
+  display: none; position: fixed; top: 52px; left: 0; right: 0;
+  background: rgba(230,81,0,0.9); color: #fff;
+  text-align: center; padding: 12px; font-size: 14px; font-weight: bold; z-index: 200;
+}
+
+/* 一覧トグル：固定浮きボタン */
+#btn-toggle-side {
+  position: fixed; bottom: 80px; right: 14px; z-index: 500;
+  background: #1a237e; color: #fff;
+  border: none; border-radius: 24px;
+  padding: 10px 18px; font-size: 14px; font-weight: bold;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35); cursor: pointer;
+}
+#btn-toggle-side:hover { background: #283593; }
+
+/* サイドバー非表示 */
+#main.side-hidden #side { display: none; }
+
+/* モバイル：デフォルトで地図優先 */
+@media (max-width: 700px) {
+  #main.side-hidden #side { display: none; }
+}
+
+/* スピナー */
+#loading {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.3); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#loading.show { display: flex; }
+.spinner {
+  width: 40px; height: 40px; border: 4px solid #fff;
+  border-top-color: transparent; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 地図上凡例 */
+#map-legend {
+  position: absolute; bottom: 28px; left: 10px; z-index: 10;
+  background: rgba(255,255,255,0.92); border-radius: 6px;
+  padding: 8px 12px; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+#map-legend .legend-row { display: flex; align-items: center; margin-bottom: 3px; gap: 6px; }
+#map-legend .legend-row:last-child { margin-bottom: 0; }
+#map-legend .legend-swatch {
+  width: 16px; height: 12px; border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading"><div class="spinner"></div></div>
+
+<!-- ヘッダー -->
+<div id="header">
+  <h1>D8 ポスティング管理</h1>
+  <div class="filter-group">
+    <label>市町村:</label>
+    <select id="city-filter" onchange="onCityFilterChange()">
+      <option value="">全体</option>
+      <!-- ▼ 渡島地方（渡島総合振興局）-->
+      <option value="函館市">函館市</option>
+      <option value="北斗市">北斗市</option>
+      <option value="七飯町">七飯町</option>
+      <option value="木古内町">木古内町</option>
+      <option value="知内町">知内町</option>
+      <option value="福島町">福島町</option>
+      <option value="松前町">松前町</option>
+      <option value="鹿部町">鹿部町</option>
+      <option value="森町">森町</option>
+      <option value="八雲町">八雲町</option>
+      <option value="長万部町">長万部町</option>
+      <!-- ▼ 檜山地方（檜山振興局）-->
+      <option value="江差町">江差町</option>
+      <option value="上ノ国町">上ノ国町</option>
+      <option value="厚沢部町">厚沢部町</option>
+      <option value="乙部町">乙部町</option>
+      <option value="今金町">今金町</option>
+      <option value="せたな町">せたな町</option>
+      <option value="奥尻町">奥尻町</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <select id="flyer-filter" onchange="onFlyerFilterChange()">
+      <option value="">チラシを選択</option>
+      <option value="419チラシ">419チラシ</option>
+      <option value="街宣チラシ">街宣チラシ</option>
+    </select>
+  </div>
+  <div id="progress-bar-wrap">
+    <div id="progress-bar-fill" style="width:0%"></div>
+    <div id="progress-label">読込中...</div>
+  </div>
+  <div id="flyer-count-label" style="font-size:12px;color:#fff;white-space:nowrap;opacity:0.9;"></div>
+  <button id="btn-toggle-side" onclick="toggleSide()" title="一覧表示切替">一覧 ◀</button>
+  <button id="btn-mansion" onclick="toggleMansionMode()" title="マンション管理">🏢 マンション</button>
+  <button id="btn-settings" onclick="openSettings()" title="設定">⚙️</button>
+  <button id="btn-pdf" onclick="printMap()">PDF出力</button>
+</div>
+
+<!-- マンションピンモードバナー -->
+<div id="mansion-pin-mode">
+  📍 登録したい場所を地図上でタップしてください
+  <button onclick="cancelMansionPinMode()" style="margin-left:12px;background:rgba(255,255,255,0.3);
+    color:#fff;border:1px solid #fff;border-radius:4px;padding:4px 10px;cursor:pointer;">
+    キャンセル
+  </button>
+</div>
+
+<!-- マンションポップアップ -->
+<div id="mansion-popup-overlay" onclick="onMansionOverlayClick(event)">
+  <div id="mansion-popup-form">
+    <h2>
+      <span id="mansion-popup-title">マンション情報</span>
+      <button onclick="closeMansionPopup()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0 4px;">✕</button>
+    </h2>
+    <div class="mf-row">
+      <label>マンション名</label>
+      <input type="text" id="mf-name" placeholder="例: ○○マンション">
+    </div>
+    <div class="mf-row">
+      <label>住所</label>
+      <input type="text" id="mf-address" placeholder="例: 函館市湯川町1丁目">
+    </div>
+    <div class="mf-row">
+      <label>市町村</label>
+      <select id="mf-city">
+        <!-- ▼ 渡島地方 -->
+        <option value="函館市">函館市</option>
+        <option value="北斗市">北斗市</option>
+        <option value="七飯町">七飯町</option>
+        <option value="木古内町">木古内町</option>
+        <option value="知内町">知内町</option>
+        <option value="福島町">福島町</option>
+        <option value="松前町">松前町</option>
+        <option value="鹿部町">鹿部町</option>
+        <option value="森町">森町</option>
+        <option value="八雲町">八雲町</option>
+        <option value="長万部町">長万部町</option>
+        <!-- ▼ 檜山地方 -->
+        <option value="江差町">江差町</option>
+        <option value="上ノ国町">上ノ国町</option>
+        <option value="厚沢部町">厚沢部町</option>
+        <option value="乙部町">乙部町</option>
+        <option value="今金町">今金町</option>
+        <option value="せたな町">せたな町</option>
+        <option value="奥尻町">奥尻町</option>
+      </select>
+    </div>
+    <div class="mf-row">
+      <label>配布ステータス</label>
+      <div class="m-status-btn-group">
+        <div class="m-status-btn" data-val="配布OK"         onclick="selectMansionStatus(this)">配布OK</div>
+        <div class="m-status-btn" data-val="オートロックNG" onclick="selectMansionStatus(this)">オートロックNG</div>
+        <div class="m-status-btn" data-val="管理人NG"       onclick="selectMansionStatus(this)">管理人NG</div>
+        <div class="m-status-btn" data-val="お断り貼り紙あり" onclick="selectMansionStatus(this)">お断り貼り紙あり</div>
+      </div>
+      <div class="m-type-btn-group" id="m-status-type-group" style="display:none">
+        <div class="m-type-btn" data-val="状況次第" onclick="selectMansionStatusType(this)">状況次第</div>
+        <div class="m-type-btn" data-val="永続NG"   onclick="selectMansionStatusType(this)">永続NG</div>
+      </div>
+    </div>
+    <div class="mf-row" id="m-count-row">
+      <label>配布枚数</label>
+      <input type="number" id="mf-count" min="0" placeholder="0">
+    </div>
+    <div class="mf-row">
+      <label>チラシ種別</label>
+      <select id="mf-flyer"></select>
+    </div>
+    <div class="mf-row">
+      <label>実施者名</label>
+      <select id="mf-member"></select>
+    </div>
+    <div class="mf-row">
+      <label>メモ</label>
+      <textarea id="mf-memo" placeholder="特記事項（例: 1Fのポストのみ可能）"></textarea>
+    </div>
+    <div id="m-last-visit-info"></div>
+    <button id="btn-mansion-submit" onclick="submitMansionForm()">保存する</button>
+    <div id="mansion-popup-message" style="font-size:12px;text-align:center;margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- 設定モーダル -->
+<div id="settings-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:24px;width:400px;max-width:92vw;max-height:90vh;overflow-y:auto;">
+    <h2 style="font-size:16px;margin-bottom:16px;color:#1a237e;">⚙️ 設定</h2>
+
+    <!-- チラシ種別 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-weight:bold;font-size:13px;margin-bottom:8px;">チラシ種別</div>
+      <div style="display:grid;grid-template-columns:1fr 100px 32px;gap:4px;margin-bottom:4px;">
+        <div style="font-size:11px;color:#888;">チラシ名</div>
+        <div style="font-size:11px;color:#888;">設定数（枚）</div>
+        <div></div>
+      </div>
+      <div id="flyer-rows"></div>
+      <button onclick="addFlyerRow()" style="background:#e8eaf6;color:#1a237e;margin-top:6px;font-size:12px;padding:4px 10px;">＋ 追加</button>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="closeSettings()" style="background:#9e9e9e;color:#fff;padding:8px 16px;border-radius:4px;">キャンセル</button>
+      <button onclick="saveSettings()" style="background:#1a237e;color:#fff;padding:8px 16px;border-radius:4px;">保存</button>
+    </div>
+    <div id="settings-message" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+  </div>
+</div>
+
+<!-- メイン -->
+<div id="main">
+  <div style="position:relative; flex:1 1 60%; min-width:0; display:flex;">
+    <div id="map" style="flex:1;"></div>
+    <!-- 凡例（地図ロード後に表示） -->
+    <div id="map-legend" style="display:none;">
+      <div class="legend-row"><div class="legend-swatch" style="background:#BDBDBD;"></div>未着手</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#FFE0B2;"></div>〜20%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#FFCC80;"></div>〜40%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#FFA726;"></div>〜60%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#F57C00;"></div>〜80%</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#BF360C;"></div>80%以上</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#EF5350;"></div>未配布</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#FFC107;"></div>再訪</div>
+      <div id="mansion-legend" style="display:none;">
+        <div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888;font-weight:bold;">🏢 マンション</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#4caf50;border-radius:50%;"></div>配布OK</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#2196f3;border-radius:50%;"></div>オートロックNG</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#f44336;border-radius:50%;"></div>管理人NG</div>
+        <div class="legend-row"><div class="legend-swatch" style="background:#ff9800;border-radius:50%;"></div>お断り貼り紙あり</div>
+      </div>
+    </div>
+  </div>
+  <div id="side">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('areas', this)">エリア一覧</button>
+      <button class="tab-btn" onclick="switchTab('mansions', this)">🏢</button>
+      <button class="tab-btn" onclick="switchTab('stores', this)">店舗</button>
+      <button class="tab-btn" onclick="switchTab('logs', this)">受信ログ</button>
+    </div>
+
+    <!-- エリア一覧タブ -->
+    <div id="tab-areas" class="tab-content active">
+      <div id="area-search">
+        <input type="text" id="area-search-input" placeholder="町名で検索..." oninput="filterAreaList()">
+      </div>
+      <div id="area-list"></div>
+    </div>
+
+    <!-- マンションタブ -->
+    <div id="tab-mansions" class="tab-content">
+      <div style="padding:8px;border-bottom:1px solid #eee;display:flex;gap:6px;align-items:center;">
+        <select id="mansion-city-filter" onchange="loadMansions()" style="flex:1;font-size:12px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;">
+          <option value="">全体</option>
+          <!-- ▼ 渡島地方 -->
+          <option value="函館市">函館市</option>
+          <option value="北斗市">北斗市</option>
+          <option value="七飯町">七飯町</option>
+          <option value="木古内町">木古内町</option>
+          <option value="知内町">知内町</option>
+          <option value="福島町">福島町</option>
+          <option value="松前町">松前町</option>
+          <option value="鹿部町">鹿部町</option>
+          <option value="森町">森町</option>
+          <option value="八雲町">八雲町</option>
+          <option value="長万部町">長万部町</option>
+          <!-- ▼ 檜山地方 -->
+          <option value="江差町">江差町</option>
+          <option value="上ノ国町">上ノ国町</option>
+          <option value="厚沢部町">厚沢部町</option>
+          <option value="乙部町">乙部町</option>
+          <option value="今金町">今金町</option>
+          <option value="せたな町">せたな町</option>
+          <option value="奥尻町">奥尻町</option>
+        </select>
+        <label style="font-size:11px;white-space:nowrap;">
+          <input type="checkbox" id="mansion-ok-only" onchange="loadMansions()"> OKのみ
+        </label>
+        <button onclick="startMansionPinMode()" style="background:#e65100;color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;">＋新規</button>
+      </div>
+      <div id="mansion-count-label" style="padding:4px 12px;font-size:11px;color:#888;border-bottom:1px solid #f0f0f0;"></div>
+      <div id="mansion-list"></div>
+    </div>
+
+    <!-- 店舗タブ -->
+    <div id="tab-stores" class="tab-content">
+      <div style="padding:8px;border-bottom:1px solid #eee;font-size:12px;color:#555;" id="store-summary">読み込み中...</div>
+      <div id="store-list"></div>
+    </div>
+
+    <!-- 配布ログタブ -->
+    <div id="tab-logs" class="tab-content">
+      <div id="log-list"></div>
+    </div>
+
+    <!-- 詳細パネル（常時表示） -->
+    <div id="detail-panel">
+      <h3 id="detail-title">エリアを選択してください</h3>
+      <div id="detail-form" style="display:none">
+        <div class="detail-row">
+          <label>ステータス</label>
+          <select id="d-status">
+            <option value="未着手">未着手</option>
+            <option value="配布済み">配布済み</option>
+            <option value="未配布">未配布</option>
+            <option value="再訪">再訪</option>
+          </select>
+        </div>
+        <div class="detail-row">
+          <label>チラシ種別</label>
+          <select id="d-flyer">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="detail-row">
+          <label>配布枚数</label>
+          <input type="number" id="d-count" min="0" placeholder="0">
+        </div>
+        <div class="detail-row">
+          <label>実施者名</label>
+          <select id="d-member">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <div class="detail-row">
+          <label>実施日</label>
+          <input type="date" id="d-date">
+        </div>
+        <div class="detail-row">
+          <label>メモ</label>
+          <input type="text" id="d-memo" placeholder="特記事項">
+        </div>
+        <button id="btn-save-area" onclick="saveAreaDetail()">保存</button>
+        <div id="detail-message"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// グローバル状態
+// ============================================================
+var g = {
+  map:             null,
+  areas:           [],
+  filteredAreas:   [],
+  selectedArea:    null,
+  dataFeatures:    {},   // normalizedName → google.maps.Data.Feature
+  areaFeatures:    {},   // エリアデータキー(city/town+chome) → Feature（逆引き用）
+  markers:         {},   // フォールバック用マーカー
+  infoWindow:      null,
+  cityFilter:      '',
+  flyerFilter:     '',
+  boundaryLoaded:  false,
+  logLimit:        50    // 受信ログの表示件数（「もっと見る」で増やす）
+};
+
+// 進捗率(0-100)→5段階オレンジ色（サイドバー用ドット）
+var PROGRESS_COLORS = ['#9e9e9e', '#FFE0B2', '#FFCC80', '#FFA726', '#F57C00', '#BF360C'];
+
+// ============================================================
+// 進捗計算ユーティリティ
+// ============================================================
+function getProgressPct(area) {
+  var h = parseInt(area.households, 10);
+  var d = parseInt(area.distCount,  10);
+  if (!h || isNaN(h) || isNaN(d) || d <= 0) return 0;
+  return Math.min(100, Math.round(d / h * 100));
+}
+
+function getProgressColor(area) {
+  var pct = getProgressPct(area);
+  if (pct <= 0)  return PROGRESS_COLORS[0];
+  if (pct < 20)  return PROGRESS_COLORS[1];
+  if (pct < 40)  return PROGRESS_COLORS[2];
+  if (pct < 60)  return PROGRESS_COLORS[3];
+  if (pct < 80)  return PROGRESS_COLORS[4];
+  return PROGRESS_COLORS[5];
+}
+
+function getProgressClass(area) {
+  var pct = getProgressPct(area);
+  if (pct <= 0)  return 'progress-0';
+  if (pct < 20)  return 'progress-1';
+  if (pct < 40)  return 'progress-2';
+  if (pct < 60)  return 'progress-3';
+  if (pct < 80)  return 'progress-4';
+  return 'progress-5';
+}
+
+function isDone(area) { return getProgressPct(area) >= 80; }
+
+// ============================================================
+// 初期化
+// ============================================================
+function initApp() {
+  // モバイル（700px以下）はデフォルトで一覧を非表示
+  if (window.innerWidth <= 700) {
+    document.getElementById('main').classList.add('side-hidden');
+    document.getElementById('btn-toggle-side').textContent = '一覧 ▶';
+  }
+  initFlyerDropdown();
+  loadAreas();
+  loadLogs();
+  loadStores();
+}
+
+function loadAreas() {
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(function(areas) {
+      g.areas = areas;
+      applyFilters();
+      updateProgressBar();
+      renderAreaList();
+      // 境界データ読み込み（初回 or 市町村変更時）
+      if (!g.boundaryLoaded) {
+        loadBoundaries();
+      } else {
+        updateBoundaryStyles();
+        showLoading(false);
+      }
+    })
+    .withFailureHandler(function(err) {
+      console.error('エリアデータ取得失敗:', err.message);
+      alert('エリアデータの取得に失敗しました。\n' + err.message);
+      g.areas = [];
+      renderAreaList();
+      showLoading(false);
+      // エリア取得に失敗しても境界線は独立して表示する
+      if (!g.boundaryLoaded) {
+        loadBoundaries();
+      }
+    })
+    .apiGetAreaListForFlyer(g.flyerFilter || null, g.cityFilter || null);
+}
+
+function loadLogs() {
+  // チラシ未選択時はログを表示しない（マスターにはChatworkデータを書かない設計）
+  if (!g.flyerFilter) {
+    renderLogList([]);
+    return;
+  }
+  var runner = google.script.run
+    .withSuccessHandler(function(logs) { renderLogList(logs); })
+    .withFailureHandler(function(err) { console.error('ログ取得失敗:', err.message); });
+  runner.apiGetDistLogsForFlyer(g.flyerFilter, g.cityFilter || null, g.logLimit);
+}
+
+// 「もっと見る」：表示件数を増やして再読み込み
+function showMoreLogs() {
+  g.logLimit += 50;
+  loadLogs();
+}
+
+// 「全期間を表示」：上限を大きくして全件読み込み
+function showAllLogs() {
+  g.logLimit = 100000;
+  loadLogs();
+}
+
+// ============================================================
+// 店舗設置ピン＋一覧
+// ============================================================
+var g_storeMarkers = [];
+var g_allStores    = [];
+
+function loadStores() {
+  var runner = google.script.run
+    .withSuccessHandler(function(stores) {
+      g_allStores = stores || [];
+      _renderStorePins(g_allStores);
+      _renderStoreList(g_allStores);
+    })
+    .withFailureHandler(function(err) { console.error('店舗取得失敗:', err.message); });
+
+  if (g.flyerFilter) {
+    runner.apiGetStoreListForFlyer(g.flyerFilter);
+  } else {
+    runner.apiGetStoreList();
+  }
+}
+
+/**
+ * 座標が渡島・檜山管内の範囲内かチェックする
+ * 範囲外 or 未設定の場合は false（マップ非表示）
+ */
+function _isValidStoreLocation(lat, lng) {
+  if (!lat || !lng) return false;
+  var la = parseFloat(lat);
+  var lo = parseFloat(lng);
+  if (isNaN(la) || isNaN(lo)) return false;
+  // 渡島・檜山管内のおおよその範囲（奥尻島含む）
+  return la >= 41.0 && la <= 43.0 && lo >= 139.0 && lo <= 141.5;
+}
+
+function _renderStorePins(stores) {
+  // 既存ピンを削除
+  g_storeMarkers.forEach(function(m) { m.setMap(null); });
+  g_storeMarkers = [];
+
+  if (!Array.isArray(stores)) return;
+
+  stores.forEach(function(store) {
+    // 座標なし・市町村不明・範囲外はピン非表示
+    if (!store.city || !_isValidStoreLocation(store.lat, store.lng)) return;
+
+    var marker = new google.maps.Marker({
+      position: { lat: store.lat, lng: store.lng },
+      map: g.map,
+      title: store.name,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+          '<circle cx="16" cy="16" r="14" fill="#4CAF50" stroke="#fff" stroke-width="3"/>' +
+          '<text x="16" y="21" font-size="14" text-anchor="middle" fill="#fff">🏪</text>' +
+          '</svg>'
+        ),
+        scaledSize: new google.maps.Size(32, 32),
+        anchor:     new google.maps.Point(16, 16)
+      },
+      zIndex: 200
+    });
+
+    (function(s, mk) {
+      mk.addListener('click', function() {
+        var content =
+          '<div style="font-size:13px;padding:4px 6px;line-height:1.9;min-width:180px;">' +
+          '<b style="font-size:14px;">🏪 ' + esc(s.name) + '</b><br>' +
+          '設置枚数: <b style="color:#e65100;">' + (s.count || 0) + '枚</b><br>' +
+          (s.city    ? '市町村: ' + esc(s.city)       + '<br>' : '') +
+          (s.address ? '住所: '   + esc(s.address)    + '<br>' : '') +
+          (s.memberName ? '設置者: ' + esc(s.memberName) + '<br>' : '') +
+          (s.date    ? '設置日: ' + esc(s.date)               : '') +
+          '</div>';
+        g.infoWindow.setContent(content);
+        g.infoWindow.open(g.map, mk);
+        // 地図をその店舗に移動
+        g.map.panTo({ lat: s.lat, lng: s.lng });
+      });
+    })(store, marker);
+
+    g_storeMarkers.push(marker);
+  });
+}
+
+function _renderStoreList(stores) {
+  var summary = document.getElementById('store-summary');
+  var list    = document.getElementById('store-list');
+  if (!list) return;
+
+  if (!stores || stores.length === 0) {
+    if (summary) summary.textContent = '店舗データなし';
+    list.innerHTML = '<div style="padding:16px;color:#888;">店舗設置データがありません</div>';
+    return;
+  }
+
+  // 合計枚数
+  var total = stores.reduce(function(s, x) { return s + (x.count || 0); }, 0);
+  if (summary) summary.textContent = '店舗数: ' + stores.length + '件　合計: ' + total + '枚';
+
+  var html = '';
+  stores.forEach(function(s, idx) {
+    var validLoc = _isValidStoreLocation(s.lat, s.lng);
+    var hasPin   = !!(s.city && validLoc);
+    var locWarn  = '';
+    if (!s.city) {
+      locWarn = '<span style="color:#e65100;font-size:11px;">⚠️ 市町村不明 — マップ未表示</span>　';
+    } else if (s.lat && s.lng && !validLoc) {
+      locWarn = '<span style="color:#e65100;font-size:11px;">⚠️ 座標が範囲外 — マップ未表示（編集して住所を確認してください）</span>　';
+    } else if (!s.lat && !s.lng) {
+      locWarn = '<span style="color:#888;font-size:11px;">📍 座標未取得 — マップ未表示</span>　';
+    }
+    html +=
+      '<div class="store-item" id="store-item-' + idx + '">' +
+        '<div class="store-item-row">' +
+          '<div class="store-item-body" onclick="_jumpToStore(' + idx + ')">' +
+            '<div class="store-name">' + (hasPin ? '🏪 ' : '📋 ') + esc(s.name) + '</div>' +
+            '<div class="store-meta">' + locWarn +
+              (s.city    ? esc(s.city) + '　'    : '') +
+              (s.address ? esc(s.address) + '　' : '') +
+            '</div>' +
+            '<div class="store-meta">' +
+              '設置枚数: <span class="store-count">' + (s.count || 0) + '枚</span>　' +
+              (s.memberName ? '設置者: ' + esc(s.memberName) + '　' : '') +
+              (s.date ? s.date : '') +
+            '</div>' +
+          '</div>' +
+          '<button class="btn-store-edit" onclick="_toggleStoreEdit(' + idx + ')">編集</button>' +
+        '</div>' +
+        '<div class="store-edit-form" id="store-edit-' + idx + '">' +
+          '<div class="store-edit-row"><label>店舗名</label><input id="se-name-' + idx + '" value="' + esc(s.name) + '"></div>' +
+          '<div class="store-edit-row"><label>市町村</label>' +
+            '<select id="se-city-' + idx + '">' +
+              '<option value="">不明</option>' +
+              ['函館市','北斗市','七飯町','木古内町','知内町','福島町','松前町','鹿部町','森町','八雲町','長万部町',
+               '江差町','上ノ国町','厚沢部町','乙部町','今金町','せたな町','奥尻町'].map(function(c) {
+                return '<option value="' + c + '"' + (s.city === c ? ' selected' : '') + '>' + c + '</option>';
+              }).join('') +
+            '</select>' +
+          '</div>' +
+          '<div class="store-edit-row"><label>住所</label><input id="se-addr-' + idx + '" value="' + esc(s.address) + '"></div>' +
+          '<div class="store-edit-row"><label>設置枚数</label><input type="number" id="se-count-' + idx + '" value="' + (s.count || 0) + '"></div>' +
+          '<button class="btn-store-save" onclick="_saveStore(' + idx + ')">保存してマップに反映</button>' +
+        '</div>' +
+      '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function _jumpToStore(idx) {
+  var s = g_allStores[idx];
+  if (!s || !s.lat || !s.lng) return;
+  g.map.panTo({ lat: s.lat, lng: s.lng });
+  g.map.setZoom(17);
+  if (g_storeMarkers[idx]) {
+    google.maps.event.trigger(g_storeMarkers[idx], 'click');
+  }
+}
+
+function _toggleStoreEdit(idx) {
+  var form = document.getElementById('store-edit-' + idx);
+  if (!form) return;
+  form.classList.toggle('open');
+}
+
+function _saveStore(idx) {
+  var s = g_allStores[idx];
+  if (!s || !s.rowNum) return;
+
+  var name  = document.getElementById('se-name-'  + idx).value.trim();
+  var city  = document.getElementById('se-city-'  + idx).value;
+  var addr  = document.getElementById('se-addr-'  + idx).value.trim();
+  var count = parseInt(document.getElementById('se-count-' + idx).value, 10) || 0;
+
+  var btn = document.querySelector('#store-item-' + idx + ' .btn-store-save');
+  if (btn) btn.textContent = '保存中...';
+
+  var storeParams = { name: name, city: city, address: addr, count: count };
+  var runner = google.script.run
+    .withSuccessHandler(function(result) {
+      if (result && result.success) {
+        // ローカルデータ更新
+        s.name    = name;
+        s.city    = city;
+        s.address = addr;
+        s.count   = count;
+        // 再描画
+        _renderStorePins(g_allStores);
+        _renderStoreList(g_allStores);
+      } else {
+        alert('保存失敗: ' + (result && result.error ? result.error : '不明なエラー'));
+        if (btn) btn.textContent = '保存してマップに反映';
+      }
+    })
+    .withFailureHandler(function(err) {
+      alert('エラー: ' + err.message);
+      if (btn) btn.textContent = '保存してマップに反映';
+    });
+
+  if (g.flyerFilter) {
+    runner.apiUpdateStoreInFlyer(g.flyerFilter, s.rowNum, storeParams);
+  } else {
+    runner.apiUpdateStore(s.rowNum, storeParams);
+  }
+}
+
+// ============================================================
+// フィルター
+// ============================================================
+function onCityFilterChange() {
+  g.cityFilter    = document.getElementById('city-filter').value;
+  g.boundaryLoaded = false;  // 市区町村変更 → 境界再取得
+  loadAreas();
+  loadLogs();
+}
+
+function onFlyerFilterChange() {
+  g.flyerFilter = document.getElementById('flyer-filter').value;
+  g.logLimit = 50; // チラシを切り替えたら表示件数をリセット
+  // 全表示を即座リセットしてから新チラシデータを読み込む
+  _resetAllDisplays();
+  loadAreas();
+  loadStores();
+  loadLogs();
+}
+
+/**
+ * チラシ切り替え時に全表示を即座リセットする
+ * マップ・エリア一覧・店舗・ログ・マンションを全てクリア
+ */
+function _resetAllDisplays() {
+  // g.areas を空にしてから境界色をリセット（全エリアが未着手色になる）
+  g.areas = [];
+  g.filteredAreas = [];
+  g.selectedArea = null;
+  if (g.boundaryLoaded) {
+    // 全ポリゴンを未着手色にリセット
+    g.map.data.forEach(function(feature) {
+      feature.setProperty('status', '未着手');
+      feature.setProperty('pct', 0);
+      feature.setProperty('distCount', 0);
+    });
+    g.map.data.revertStyle();
+    g.map.data.setStyle(function(feature) {
+      return _calcBoundaryStyle(feature, false);
+    });
+  }
+
+  // フォールバックマーカーをクリア
+  Object.keys(g.markers).forEach(function(k) { g.markers[k].setMap(null); });
+  g.markers = {};
+
+  // エリア一覧クリア
+  document.getElementById('area-list').innerHTML =
+    '<div style="padding:20px;text-align:center;color:#888;font-size:12px;">読み込み中...</div>';
+
+  // 詳細パネルリセット
+  document.getElementById('detail-title').textContent = 'エリアを選択してください';
+  document.getElementById('detail-form').style.display = 'none';
+
+  // 店舗クリア
+  g_allStores = [];
+  _renderStorePins([]);
+  _renderStoreList([]);
+
+  // 受信ログクリア
+  document.getElementById('log-list').innerHTML = '';
+
+  // マンションクリア
+  _clearMansionMarkers();
+  g_allMansions = [];
+  _renderMansionList();
+  var mansionBtn = document.getElementById('btn-mansion');
+  if (mansionBtn) mansionBtn.classList.remove('active');
+  g_mansionVisible = false;
+  var mansionLegend = document.getElementById('mansion-legend');
+  if (mansionLegend) mansionLegend.style.display = 'none';
+
+  // プログレスバーリセット
+  updateProgressBar();
+}
+
+function applyFilters() {
+  var searchVal = document.getElementById('area-search-input').value.trim();
+  g.filteredAreas = g.areas.filter(function(a) {
+    if (searchVal) {
+      var name = a.fullName || (a.town + (a.chome || ''));
+      if (name.indexOf(searchVal) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function filterAreaList() {
+  applyFilters();
+  renderAreaList();
+}
+
+// ============================================================
+// エリア一覧レンダリング
+// ============================================================
+function renderAreaList() {
+  var list = document.getElementById('area-list');
+  if (!g.filteredAreas.length) {
+    list.innerHTML = '<div style="padding:16px;color:#888;">データがありません</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < g.filteredAreas.length; i++) {
+    var a = g.filteredAreas[i];
+    var key = areaKey(a);
+    var dotClass = getProgressClass(a);
+    var pct = getProgressPct(a);
+    var isSelected = g.selectedArea && areaKey(g.selectedArea) === key;
+    // 表示テキスト：進捗率が計算できる場合は枚数、できない場合はステータス
+    var distInfo = pct > 0
+      ? (a.distCount || 0) + '枚 (' + pct + '%)'
+      : (a.status === '配布済み' && a.distCount > 0
+          ? '配布済み ' + a.distCount + '枚'
+          : (a.status || '未着手'));
+    html += '<div class="area-item' + (isSelected ? ' selected' : '') + '"' +
+      ' onclick="selectArea(' + i + ')">' +
+      '<div class="area-status-dot ' + dotClass + '" title="' + (a.status || '未着手') + '"></div>' +
+      '<span class="area-name">' + esc(a.fullName || (a.town + (a.chome || ''))) + '</span>' +
+      '<div class="area-right">' +
+        '<span class="area-households">' + (a.households > 0 ? a.households + '世帯' : '-') + '</span>' +
+        '<span class="area-dist-info">' + distInfo + '</span>' +
+      '</div>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+}
+
+// ============================================================
+// ヘッダー統計（バー＋右端ラベル）
+// ============================================================
+function updateProgressBar() {
+  var ff   = g.flyerFilter || '';
+  var fill = document.getElementById('progress-bar-fill');
+  var lbl  = document.getElementById('progress-label');
+
+  // チラシ未選択時は 0/0 表示（マスターにはChatworkデータなし）
+  if (!ff) {
+    if (fill) {
+      fill.style.width = '0%';
+      fill.style.background = 'linear-gradient(90deg,#69f0ae,#00e676)';
+    }
+    if (lbl) lbl.textContent = 'チラシを選択してください（0／0）';
+    updateFlyerCountLabel();
+    return;
+  }
+
+  // チラシ別・全エリアの集計
+  var distByFlyer     = {};
+  var totalHouseholds = 0;
+  (g.areas || []).forEach(function(a) {
+    var ft = a.flyerType || '';
+    distByFlyer[ft] = (distByFlyer[ft] || 0) + (parseInt(a.distCount, 10) || 0);
+    totalHouseholds += parseInt(a.households, 10) || 0;
+  });
+
+  // 選択チラシの配布枚数（ff指定時はそのチラシのみ、全種別時は目標設定済みチラシの合計）
+  var totalDist = 0;
+  if (ff) {
+    totalDist = distByFlyer[ff] || 0;
+  } else {
+    // 全種別：目標設定済みチラシの合計のみ（目標未設定チラシを混入させない）
+    var hasTarget = Object.keys(g.flyerTargets).length > 0;
+    if (hasTarget) {
+      Object.keys(g.flyerTargets).forEach(function(k) {
+        totalDist += distByFlyer[k] || 0;
+      });
+    } else {
+      Object.keys(distByFlyer).forEach(function(k) { totalDist += distByFlyer[k]; });
+    }
+  }
+
+  var pct, barLabel, exceeded = false;
+
+  if (g.cityFilter) {
+    // ── 市町村選択中：配布枚数 ／ 全世帯数 ──
+    if (totalHouseholds > 0) {
+      var rawPct = Math.round(totalDist / totalHouseholds * 100);
+      exceeded = rawPct > 100;
+      pct = Math.min(100, rawPct);
+      var label = ff || '配布';
+      barLabel = label + '：' + totalDist.toLocaleString() +
+        '枚／' + totalHouseholds.toLocaleString() + '世帯（' + rawPct + '%）';
+    } else {
+      pct = 0;
+      barLabel = (ff || '配布') + '：' + totalDist.toLocaleString() + '枚';
+    }
+  } else {
+    // ── 全体：配布枚数 ／ 目標枚数 ──
+    var target = 0;
+    if (ff) {
+      target = g.flyerTargets[ff] || 0;
+    } else {
+      Object.keys(g.flyerTargets).forEach(function(k) { target += g.flyerTargets[k] || 0; });
+    }
+    if (target > 0) {
+      var rawPct2 = Math.round(totalDist / target * 100);
+      exceeded = rawPct2 > 100;
+      pct = Math.min(100, rawPct2);
+      barLabel = (ff || '合計') + '：' + totalDist.toLocaleString() +
+        '／' + target.toLocaleString() + '枚（' + rawPct2 + '%）';
+    } else {
+      var total = g.areas.length;
+      var done  = g.areas.filter(function(a) { return isDone(a); }).length;
+      pct       = total ? Math.round(done / total * 100) : 0;
+      barLabel  = total ? 'エリア ' + done + '／' + total + '（' + pct + '%）' : 'データなし';
+    }
+  }
+
+  fill.style.width = pct + '%';
+  if (exceeded)           fill.style.background = 'linear-gradient(90deg,#7b1fa2,#e040fb)'; // 超過：紫
+  else if (pct >= 80)     fill.style.background = 'linear-gradient(90deg,#ff6f00,#ffca28)'; // 高達成：橙
+  else if (pct >= 50)     fill.style.background = 'linear-gradient(90deg,#00acc1,#26c6da)'; // 中：青
+  else                    fill.style.background = 'linear-gradient(90deg,#69f0ae,#00e676)'; // 低：緑
+  lbl.textContent = barLabel;
+
+  updateFlyerCountLabel();
+}
+
+function updateFlyerCountLabel() {
+  var label = document.getElementById('flyer-count-label');
+  if (!label) return;
+
+  var ff = g.flyerFilter || '';
+
+  // チラシ未選択時は空表示
+  if (!ff && !g.cityFilter) {
+    label.textContent = '';
+    return;
+  }
+
+  if (g.cityFilter) {
+    // 市町村選択中 → 右端はエリア完了数
+    var total = g.areas.length;
+    var done  = g.areas.filter(function(a) { return isDone(a); }).length;
+    label.textContent = total ? 'エリア ' + done + '／' + total : '';
+  } else {
+    // 全体 → 右端はチラシ別の枚数／目標
+    var parts = [];
+    Object.keys(g.flyerTargets).forEach(function(name) {
+      if (ff && name !== ff) return;
+      var dist   = 0;
+      var target = g.flyerTargets[name] || 0;
+      (g.areas || []).forEach(function(a) {
+        if (a.flyerType === name) dist += parseInt(a.distCount, 10) || 0;
+      });
+      if (target > 0) {
+        parts.push(name + '：' + dist.toLocaleString() + '／' + target.toLocaleString() + '枚');
+      }
+    });
+    label.textContent = parts.join('　');
+  }
+}
+
+// ============================================================
+// エリア選択・詳細
+// ============================================================
+function selectArea(idx) {
+  g.selectedArea = g.filteredAreas[idx];
+  renderAreaList();
+  showDetailPanel(g.selectedArea);
+  highlightSelectedBoundary();
+
+  // 選択エリアの座標があればパン、なければ市区町村中心へ
+  if (g.map) {
+    if (g.selectedArea.lat && g.selectedArea.lng) {
+      g.map.panTo({ lat: parseFloat(g.selectedArea.lat), lng: parseFloat(g.selectedArea.lng) });
+    } else {
+      var cityCoords = {
+        '函館市': { lat: 41.77, lng: 140.73 },
+        '七飯町': { lat: 41.87, lng: 140.68 },
+        '北斗市': { lat: 41.82, lng: 140.65 },
+        '森町':   { lat: 42.10, lng: 140.57 },
+        '木古内町': { lat: 41.67, lng: 140.44 }
+      };
+      var c = cityCoords[g.selectedArea.city];
+      if (c) g.map.panTo(c);
+    }
+  }
+}
+
+function showDetailPanel(area) {
+  document.getElementById('detail-title').textContent =
+    area.city + ' ' + (area.fullName || (area.town + (area.chome || '')));
+  document.getElementById('detail-form').style.display = '';
+  document.getElementById('d-status').value  = area.status     || '未着手';
+  document.getElementById('d-count').value   = area.distCount  || '';
+  document.getElementById('d-date').value    = area.distDate   || '';
+  document.getElementById('d-memo').value    = area.memo       || '';
+  // selectの値をセット（選択肢になければ末尾に追加）
+  _setSelectValue('d-flyer',  area.flyerType  || '');
+  _setSelectValue('d-member', area.memberName || '');
+  document.getElementById('detail-message').textContent = '';
+}
+
+function saveAreaDetail() {
+  if (!g.selectedArea) return;
+
+  var params = {
+    city:       g.selectedArea.city,
+    town:       g.selectedArea.town,
+    chome:      g.selectedArea.chome,
+    status:     document.getElementById('d-status').value,
+    flyerType:  document.getElementById('d-flyer').value,
+    distCount:  parseInt(document.getElementById('d-count').value, 10) || 0,
+    memberName: document.getElementById('d-member').value,
+    distDate:   document.getElementById('d-date').value,
+    memo:       document.getElementById('d-memo').value
+  };
+
+  showLoading(true);
+  var areaRunner = google.script.run
+    .withSuccessHandler(function(result) {
+      showLoading(false);
+      if (result.success) {
+        document.getElementById('detail-message').textContent = '保存しました';
+        document.getElementById('detail-message').style.color = 'green';
+        // ローカル状態更新
+        g.selectedArea.status     = params.status;
+        g.selectedArea.flyerType  = params.flyerType;
+        g.selectedArea.distCount  = params.distCount;
+        g.selectedArea.memberName = params.memberName;
+        g.selectedArea.distDate   = params.distDate;
+        g.selectedArea.memo       = params.memo;
+        renderAreaList();
+        updateProgressBar();
+        updateFlyerCountLabel();
+        updateBoundaryStyles();   // ポリゴン色を再描画
+        loadLogs();
+      } else {
+        document.getElementById('detail-message').textContent = 'エラー: ' + (result.error || '不明');
+        document.getElementById('detail-message').style.color = 'red';
+      }
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      document.getElementById('detail-message').textContent = '通信エラー: ' + err.message;
+      document.getElementById('detail-message').style.color = 'red';
+    });
+
+  if (g.flyerFilter) {
+    areaRunner.apiUpdateAreaInFlyer(g.flyerFilter, params);
+  } else {
+    areaRunner.apiUpdateArea(params);
+  }
+}
+
+// ============================================================
+// ログ一覧レンダリング
+// ============================================================
+function renderLogList(logs) {
+  var list = document.getElementById('log-list');
+  if (!logs || !logs.length) {
+    list.innerHTML = '<div style="padding:16px;color:#888;">ログがありません</div>';
+    return;
+  }
+
+  // 配布種別アイコンマップ
+  var distTypeIcon = {
+    '町丁目':    '📮',
+    'チラシ配布': '🤝',
+    '辻立ち':    '🚶',
+    'マンション': '🏢',
+    '新聞折り込み':'📰',
+    '店舗設置':   '🏪'
+  };
+
+  var html = '';
+  for (var i = 0; i < logs.length; i++) {
+    var l = logs[i];
+    var icon = distTypeIcon[l.distType] || '📋';
+    var typeLabel = l.distType ? esc(l.distType) : 'ポスティング';
+    // source に「新チラシ」印があれば赤太字で強調表示
+    var isNewFlyer = l.source && String(l.source).indexOf('新チラシ') !== -1;
+    var badge = isNewFlyer ? '<span class="log-new-flyer-badge">🆕 新チラシ追加</span>' : '';
+    html += '<div class="log-item' + (isNewFlyer ? ' log-new-flyer' : '') + '">' +
+      '<div class="log-datetime">' + esc(l.datetime) + ' [' + esc(l.source) + ']</div>' +
+      '<div class="log-body">' + badge +
+        icon + ' ' + esc(l.city) + ' ' + esc(l.address) + ' / ' +
+        esc(l.flyerType) + ' / ' + (l.distCount || 0) + '枚 / ' + esc(l.memberName) +
+        ' <span style="font-size:10px;color:#888;">（' + typeLabel + '）</span>' +
+      '</div></div>';
+  }
+
+  // 表示件数が上限に達している＝まだ古い記録がある可能性 → 続き表示ボタン
+  if (logs.length >= g.logLimit) {
+    html += '<div class="log-more">' +
+      '<button type="button" onclick="showMoreLogs()">もっと見る（+50件）</button>' +
+      '<button type="button" onclick="showAllLogs()">全期間を表示</button>' +
+      '</div>';
+  } else if (g.logLimit > 50) {
+    // 全件表示済み（これ以上ない）ことを明示
+    html += '<div class="log-more log-more-end">全 ' + logs.length + ' 件を表示中</div>';
+  }
+
+  list.innerHTML = html;
+}
+
+// ============================================================
+// Google Maps — 初期化
+// ============================================================
+function initMap() {
+  g.map = new google.maps.Map(document.getElementById('map'), {
+    center:    { lat: 41.80, lng: 140.70 },
+    zoom:      12,
+    mapTypeId: 'roadmap'
+  });
+  g.infoWindow = new google.maps.InfoWindow();
+  document.getElementById('map-legend').style.display = 'block';
+  _initMansionMapClick();
+  initApp();
+}
+
+// ============================================================
+// 境界ポリゴン — 読み込み
+// ============================================================
+function loadBoundaries() {
+  // エリアリストは既に g.areas に入っている
+  // 境界データをGASから取得
+  google.script.run
+    .withSuccessHandler(function(result) {
+      showLoading(false);
+      if (result && result.error) {
+        console.warn('境界データ未生成:', result.error);
+        alert('境界データが見つかりません。\nGASエディタで importEStatBoundary() を実行してください。');
+        _showFallbackMarkers();
+        return;
+      }
+      _applyBoundaryGeoJson(result);
+      g.boundaryLoaded = true;
+      // 境界ロード後、すでにg.areasにチラシSSのデータが入っているので
+      // updateBoundaryStylesで正しい色に塗り直す（初回のみ必要）
+      updateBoundaryStyles();
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      console.error('境界データ取得エラー:', err.message);
+      alert('境界データの取得でエラーが発生しました:\n' + err.message);
+      _showFallbackMarkers();
+    })
+    .apiGetBoundaryData(g.cityFilter || null);
+}
+
+/**
+ * GeoJSON を Data Layer に追加してスタイル設定
+ */
+function _applyBoundaryGeoJson(geojson) {
+  // 既存フィーチャーを全削除
+  g.map.data.forEach(function(f) { g.map.data.remove(f); });
+  g.dataFeatures = {};
+
+  // フォールバックマーカーも消去
+  for (var k in g.markers) { g.markers[k].setMap(null); }
+  g.markers = {};
+
+  if (!geojson || !geojson.features || geojson.features.length === 0) {
+    console.warn('境界フィーチャーが0件（選択市町村の境界データなし、または全データが除外された）');
+    _showFallbackMarkers();
+    return;
+  }
+
+  // GeoJSON 追加
+  var added = g.map.data.addGeoJson(geojson);
+
+  // ルックアップマップ構築（市町村名+町名で一意キー）
+  added.forEach(function(f) {
+    var city = f.getProperty('cityName') || '';
+    var norm = f.getProperty('normalizedName') || '';
+    var key  = city + '/' + norm;
+    if (norm) g.dataFeatures[key] = f;
+  });
+
+  // ベーススタイル設定
+  g.map.data.setStyle(function(feature) {
+    return _calcBoundaryStyle(feature, false);
+  });
+
+  // クリックリスナー（重複防止のためクリア後に追加）
+  google.maps.event.clearListeners(g.map.data, 'click');
+  g.map.data.addListener('click', function(event) {
+    _onBoundaryClick(event.feature, event.latLng);
+  });
+
+  // 既に選択中のエリアがあればハイライト復元
+  if (g.selectedArea) highlightSelectedBoundary();
+
+  console.log('境界ポリゴン表示: ' + added.length + '件 (マッチ数は getBoundaryData 参照)');
+}
+
+/**
+ * ポリゴンのスタイルを計算する
+ */
+function _calcBoundaryStyle(feature, isSelected) {
+  if (isSelected) {
+    return {
+      fillColor:     '#2196F3',
+      fillOpacity:   0.65,
+      strokeColor:   '#0D47A1',
+      strokeWeight:  2.5,
+      strokeOpacity: 1,
+      clickable:     true
+    };
+  }
+
+  var status = feature.getProperty('status') || '未着手';
+  var pct    = feature.getProperty('pct')    || 0;
+
+  var fillColor, fillOpacity;
+
+  if (status === '未配布') {
+    fillColor   = '#EF5350';
+    fillOpacity = 0.55;
+  } else if (status === '再訪') {
+    fillColor   = '#FFC107';
+    fillOpacity = 0.55;
+  } else if (status === '配布済み') {
+    // 進捗率に応じたオレンジグラデーション（世帯数0の場合は固定色）
+    if      (pct <= 0)  { fillColor = '#FFA726'; fillOpacity = 0.65; } // 世帯数不明でも色付き
+    else if (pct < 20)  { fillColor = '#FFE0B2'; fillOpacity = 0.55; }
+    else if (pct < 40)  { fillColor = '#FFCC80'; fillOpacity = 0.60; }
+    else if (pct < 60)  { fillColor = '#FFA726'; fillOpacity = 0.65; }
+    else if (pct < 80)  { fillColor = '#F57C00'; fillOpacity = 0.70; }
+    else                { fillColor = '#BF360C'; fillOpacity = 0.75; }
+  } else {
+    // 未着手
+    fillColor   = '#BDBDBD';
+    fillOpacity = 0.30;
+  }
+
+  return {
+    fillColor:     fillColor,
+    fillOpacity:   fillOpacity,
+    strokeColor:   '#555555',
+    strokeWeight:  0.8,
+    strokeOpacity: 0.8,
+    clickable:     true
+  };
+}
+
+/**
+ * ポリゴンクリック時の処理
+ */
+function _onBoundaryClick(feature, latLng) {
+  // プロパティからエリアを特定
+  var city   = feature.getProperty('city')   || '';
+  var town   = feature.getProperty('town')   || '';
+  var chome  = feature.getProperty('chome')  || '';
+  var normName = feature.getProperty('normalizedName') || '';
+
+  var area = null;
+
+  // city/town/chome で完全一致を試みる
+  if (city && town) {
+    for (var i = 0; i < g.areas.length; i++) {
+      var a = g.areas[i];
+      if (a.city === city && a.town === town && (a.chome || '') === chome) {
+        area = a; break;
+      }
+    }
+  }
+
+  // 見つからなければ正規化名でフォールバック
+  if (!area && normName) {
+    area = _findAreaByNormName(normName);
+  }
+
+  if (!area) {
+    // エリアマスタ未登録のポリゴン → 地名だけ情報ウィンドウで表示
+    var cityName  = feature.getProperty('cityName')  || '';
+    var areaName  = feature.getProperty('name')      || normName || '';
+    if (cityName || areaName) {
+      g.infoWindow.setContent(
+        '<div style="font-size:13px;padding:4px 6px;line-height:1.8;">' +
+        '<b>' + esc(cityName) + ' ' + esc(areaName) + '</b><br>' +
+        '<span style="color:#888;font-size:12px;">エリアマスタ未登録（配布管理対象外）</span><br>' +
+        '<span style="color:#c00;font-size:11px;">🔍 normalizedName: <b>' + esc(normName) + '</b></span>' +
+        '</div>'
+      );
+      g.infoWindow.setPosition(latLng);
+      g.infoWindow.open(g.map);
+    }
+    return;
+  }
+
+  g.selectedArea = area;
+  highlightSelectedBoundary();
+  showDetailPanel(area);
+  renderAreaList();
+
+  // 情報ウィンドウ
+  var pct = getProgressPct(area);
+  g.infoWindow.setContent(
+    '<div style="font-size:13px;padding:2px 4px;line-height:1.7;">' +
+    '<b>' + esc(area.city) + ' ' + esc(area.fullName || (area.town + (area.chome || ''))) + '</b><br>' +
+    'ステータス: ' + esc(area.status || '未着手') + '<br>' +
+    '世帯数: ' + (area.households || '-') + '世帯<br>' +
+    '配布枚数: ' + (area.distCount || 0) + '枚 (' + pct + '%)' +
+    (area.memberName ? '<br>担当: ' + esc(area.memberName) : '') +
+    (area.distDate   ? '<br>実施日: ' + esc(area.distDate) : '') +
+    '<br><span style="color:#c00;font-size:11px;">🔍 normalizedName: <b>' + esc(normName) + '</b></span>' +
+    '</div>'
+  );
+  g.infoWindow.setPosition(latLng);
+  g.infoWindow.open(g.map);
+}
+
+/**
+ * 選択エリアのポリゴンをハイライト表示
+ */
+function highlightSelectedBoundary() {
+  if (!g.map) return;
+  g.map.data.revertStyle();
+  if (!g.selectedArea) return;
+
+  var a = g.selectedArea;
+  var targetKey = (a.city || '') + '/' + _normalizeName((a.town || '') + (a.chome || ''));
+
+  // フィーチャーを全スキャンして _areaKey が一致するものを収集
+  // 複数候補がある場合は tier の小さい方（直接マッチ）を優先する
+  // 通常エリア（例: 公園通1丁目）は GeoJSON に同名ポリゴンが存在するので tier1 が正しい
+  var best = null;
+  var bestTier = 999;
+  g.map.data.forEach(function(f) {
+    if (f.getProperty('_areaKey') === targetKey) {
+      var tier = f.getProperty('_tier') || 1;
+      if (tier < bestTier) {
+        best     = f;
+        bestTier = tier;
+      }
+    }
+  });
+
+  // _areaKey で見つからない場合は dataFeatures で直接検索（ページ初期状態の保険）
+  if (!best) {
+    var normName = _normalizeName(a.fullName || ((a.town || '') + (a.chome || '')));
+    best = g.dataFeatures[(a.city || '') + '/' + normName] || null;
+  }
+
+  if (best) {
+    g.map.data.overrideStyle(best, _calcBoundaryStyle(best, true));
+  }
+}
+
+/**
+ * 保存後など、エリアデータ変更時にポリゴン色を更新する
+ * （再フェッチせず、ローカルデータで再スタイリング）
+ */
+function updateBoundaryStyles() {
+  if (!g.map || !g.boundaryLoaded) return;
+
+  // エリアルックアップを更新（市町村名+町名で一意キー）
+  var areaMap = {};
+  g.areas.forEach(function(a) {
+    // 「総数」行はスキップ（集計行のため地図表示対象外）
+    if ((a.town || '').indexOf('総数') !== -1) return;
+    // 「字」「大字」プレフィックスを除去（エリアマスタ側の表記ゆれに対応）
+    var cleanTown  = (a.town  || '').replace(/^[大字字]{1,2}/, '').trim();
+    var cleanChome = (a.chome || '').replace(/^[大字字]{1,2}/, '').trim();
+    var city = a.city || '';
+
+    function _reg(k, val) { if (k && !areaMap[k]) areaMap[k] = val; }
+
+    // ① 基本キー（字除去済み）
+    _reg(city + '/' + _normalizeName(cleanTown + cleanChome), a);
+    // ② 元のキー
+    _reg(city + '/' + _normalizeName(a.fullName || (a.town + (a.chome || ''))), a);
+    // ③ 丁目なしキー（境界データが丁目を持たない場合: 公園通1丁目→公園通）
+    if (cleanChome) {
+      _reg(city + '/' + _normalizeName(cleanTown), a);
+    }
+    // ④ スペース区切り複合地名の先頭トークン（村山 中山→村山、3好 柳沢→3好）
+    var tokens = cleanTown.split(/[\s　]+/);
+    if (tokens.length > 1) {
+      _reg(city + '/' + _normalizeName(tokens[0]), a);
+      // 末尾トークンも登録（峨朗 戸切地 添山→添山）
+      _reg(city + '/' + _normalizeName(tokens[tokens.length - 1]), a);
+    }
+  });
+
+  // 各フィーチャーのプロパティを最新データで上書き
+  // _areaKey プロパティをフィーチャーに埋め込む（後のハイライト検索で使用）
+  // _tier プロパティ: 1=直接マッチ、3=フォールバック（town名のみ一致）
+  g.areaFeatures = {}; // 後方互換のため維持
+  g.map.data.forEach(function(f) {
+    var city = f.getProperty('cityName') || '';
+    var norm = f.getProperty('normalizedName') || '';
+    var key  = city + '/' + norm;
+    var area = areaMap[key];
+    if (area) {
+      f.setProperty('status',    area.status || '未着手');
+      f.setProperty('pct',       getProgressPct(area));
+      f.setProperty('distCount', area.distCount || 0);
+
+      // エリアキーとマッチ種別をフィーチャーに埋め込む
+      var cleanTown  = (area.town  || '').replace(/^[大字字]{1,2}/, '').trim();
+      var cleanChome = (area.chome || '').replace(/^[大字字]{1,2}/, '').trim();
+      var aKey = (area.city || '') + '/' + _normalizeName(cleanTown + cleanChome);
+      // tier③: cleanChomeがあり、フィーチャー名=town名のみ（丁目なし）
+      var tier = (cleanChome && norm === _normalizeName(cleanTown)) ? 3 : 1;
+      f.setProperty('_areaKey', aKey);
+      f.setProperty('_tier',    tier);
+    } else {
+      f.setProperty('_areaKey', '');
+      f.setProperty('_tier',    99);
+    }
+  });
+
+  // 全スタイル再適用
+  g.map.data.revertStyle();
+  g.map.data.setStyle(function(feature) {
+    return _calcBoundaryStyle(feature, false);
+  });
+  highlightSelectedBoundary();
+}
+
+// ============================================================
+// フォールバック：点マーカー（境界データ未生成時）
+// ============================================================
+function _showFallbackMarkers() {
+  for (var k in g.markers) { g.markers[k].setMap(null); }
+  g.markers = {};
+
+  g.areas.forEach(function(area) {
+    if (!area.lat || !area.lng) return;
+    var color = getProgressColor(area);
+    var pct   = getProgressPct(area);
+    var marker = new google.maps.Marker({
+      position: { lat: parseFloat(area.lat), lng: parseFloat(area.lng) },
+      map:   g.map,
+      title: (area.fullName || (area.town + (area.chome || ''))) + ' ' + pct + '%',
+      icon:  {
+        path:         google.maps.SymbolPath.CIRCLE,
+        scale:        9,
+        fillColor:    color,
+        fillOpacity:  0.9,
+        strokeColor:  '#fff',
+        strokeWeight: 1.5
+      }
+    });
+    (function(a, m) {
+      m.addListener('click', function() {
+        g.infoWindow.setContent(
+          '<div style="font-size:13px;">' +
+          '<b>' + esc(a.city) + ' ' + esc(a.fullName || (a.town + (a.chome || ''))) + '</b><br>' +
+          '世帯数: ' + (a.households || '-') + '世帯<br>' +
+          '配布枚数: ' + (a.distCount || 0) + '枚 (' + getProgressPct(a) + '%)' +
+          (a.memberName ? '<br>担当: ' + esc(a.memberName) : '') +
+          '</div>'
+        );
+        g.infoWindow.open(g.map, m);
+        showDetailPanel(a);
+        g.selectedArea = a;
+        renderAreaList();
+      });
+    })(area, marker);
+    g.markers[areaKey(area)] = marker;
+  });
+}
+
+// ============================================================
+// 名前正規化（フロントエンド版：ES5、バックエンドと同一ロジック）
+// ============================================================
+// selectに値をセット（選択肢にない値は末尾に追加して選択）
+function _setSelectValue(id, value) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  if (!value) { sel.value = ''; return; }
+  // 既存選択肢にあるか確認
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === value) { sel.value = value; return; }
+  }
+  // なければ追加して選択
+  var opt = document.createElement('option');
+  opt.value = value; opt.textContent = value;
+  sel.appendChild(opt);
+  sel.value = value;
+}
+
+function _normalizeName(name) {
+  var twoChar = { '十一':'11','十二':'12','十三':'13','十四':'14','十五':'15',
+                  '十六':'16','十七':'17','十八':'18','十九':'19','二十':'20' };
+  var oneChar = { '一':'1','二':'2','三':'3','四':'4','五':'5',
+                  '六':'6','七':'7','八':'8','九':'9','十':'10' };
+  var result = name;
+  ['十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'].forEach(function(k) {
+    result = result.split(k).join(twoChar[k]);
+  });
+  ['一','二','三','四','五','六','七','八','九','十'].forEach(function(k) {
+    result = result.split(k).join(oneChar[k]);
+  });
+  return result;
+}
+
+function _findAreaByNormName(normName) {
+  // Tier1: 完全一致（fullName または town+chome）
+  for (var i = 0; i < g.areas.length; i++) {
+    var a = g.areas[i];
+    var key = _normalizeName(a.fullName || (a.town + (a.chome || '')));
+    if (key === normName) return a;
+  }
+  // Tier3フォールバック: GeoJSONが丁目なし名称だが、エリアマスタは丁目あり
+  // 例: normName="赤川" → エリアマスタ town="赤川" chome="1丁目" にマッチ
+  for (var j = 0; j < g.areas.length; j++) {
+    var b = g.areas[j];
+    if (b.chome) {
+      var cleanTown = (b.town || '').replace(/^[大字字]{1,2}/, '').trim();
+      if (_normalizeName(cleanTown) === normName) return b;
+    }
+  }
+  return null;
+}
+
+// ============================================================
+// タブ切り替え
+// ============================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ============================================================
+// PDF 出力
+// ============================================================
+function printMap() { window.print(); }
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function areaKey(a) {
+  return a.city + '|' + a.town + '|' + (a.chome || '');
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function showLoading(show) {
+  var el = document.getElementById('loading');
+  if (show) el.classList.add('show');
+  else      el.classList.remove('show');
+}
+
+// ============================================================
+// サイドバー開閉
+// ============================================================
+function toggleSide() {
+  var main = document.getElementById('main');
+  var btn  = document.getElementById('btn-toggle-side');
+  if (main.classList.contains('side-hidden')) {
+    main.classList.remove('side-hidden');
+    btn.textContent = '一覧 ◀';
+  } else {
+    main.classList.add('side-hidden');
+    btn.textContent = '一覧 ▶';
+  }
+  // 地図リサイズを通知
+  if (g.map) google.maps.event.trigger(g.map, 'resize');
+}
+
+// ============================================================
+// 設定モーダル
+// ============================================================
+// キャッシュ
+g.flyerTargets = {};
+g.flyerTypes   = [];
+
+// ============================================================
+// 設定モーダル
+// ============================================================
+function openSettings() {
+  google.script.run
+    .withSuccessHandler(function(types) {
+      google.script.run
+        .withSuccessHandler(function(targets) {
+          var container = document.getElementById('flyer-rows');
+          container.innerHTML = '';
+          types.forEach(function(t) {
+            _addFlyerRowWith(t, targets[t] || '');
+          });
+          document.getElementById('settings-message').textContent = '';
+          document.getElementById('settings-overlay').style.display = 'flex';
+        })
+        .apiGetFlyerTargets();
+    })
+    .apiGetFlyerTypes();
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').style.display = 'none';
+}
+
+function addFlyerRow() { _addFlyerRowWith('', ''); }
+
+function _addFlyerRowWith(name, target) {
+  var container = document.getElementById('flyer-rows');
+  var row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 100px 32px;gap:4px;margin-bottom:4px;';
+  // data-original に元のチラシ名を記録（リネーム検出に使用）
+  row.innerHTML =
+    '<input type="text" placeholder="チラシ名" value="' + esc(name) + '" data-original="' + esc(name) + '"' +
+    ' style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">' +
+    '<input type="number" placeholder="設定数" value="' + (target || '') + '" min="0"' +
+    ' style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">' +
+    '<button onclick="this.parentElement.remove()" title="削除"' +
+    ' style="background:#ef5350;color:#fff;border-radius:4px;font-size:12px;padding:0;">✕</button>';
+  container.appendChild(row);
+}
+
+function saveSettings() {
+  var rows = document.getElementById('flyer-rows').querySelectorAll('div');
+  var types = []; var targets = {}; var renames = [];
+  rows.forEach(function(row) {
+    var inputs       = row.querySelectorAll('input');
+    var originalName = inputs[0].getAttribute('data-original') || '';
+    var name         = inputs[0].value.trim();
+    var target       = parseInt(inputs[1].value, 10);
+    if (!name) return;
+    types.push(name);
+    if (!isNaN(target) && target > 0) targets[name] = target;
+    // 元の名前と違う → リネーム対象
+    if (originalName && originalName !== name) {
+      renames.push({ from: originalName, to: name });
+    }
+  });
+
+  if (types.length === 0) {
+    document.getElementById('settings-message').textContent = 'チラシ名を1つ以上入力してください';
+    return;
+  }
+
+  var msg = document.getElementById('settings-message');
+  msg.textContent = '保存中...';
+  msg.style.color = '#333';
+
+  // ① リネーム → ② 種別保存（新シート作成）→ ③ 目標保存
+  google.script.run
+    .withSuccessHandler(function(rr) {
+      google.script.run
+        .withSuccessHandler(function(r1) {
+          google.script.run
+            .withSuccessHandler(function(r2) {
+              if (r1.success && r2.success) {
+                msg.textContent = renames.length > 0
+                  ? '保存しました（シート名変更: ' + renames.map(function(r){ return r.from+'→'+r.to; }).join(', ') + '）'
+                  : '保存しました';
+                msg.style.color = 'green';
+                g.flyerTargets = targets;
+                g.flyerTypes   = types;
+                _updateFlyerDropdown(types);
+                _updateDetailFlyerSelect(types);
+                updateFlyerCountLabel();
+                setTimeout(closeSettings, 1200);
+              } else {
+                msg.textContent = 'エラーが発生しました';
+                msg.style.color = 'red';
+              }
+            })
+            .apiSetFlyerTargets(targets);
+        })
+        .apiSetFlyerTypes(types);
+    })
+    .apiRenameFlyers(renames);
+}
+
+// ============================================================
+// ドロップダウン更新
+// ============================================================
+function _updateFlyerDropdown(types) {
+  // ヘッダーフィルター
+  var sel = document.getElementById('flyer-filter');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">チラシを選択</option>';
+  // 新しいチラシが上に来るよう逆順で表示
+  types.slice().reverse().forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+function _updateDetailFlyerSelect(types) {
+  // 詳細フォームのチラシ選択
+  var sel = document.getElementById('d-flyer');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  types.forEach(function(t) {
+    var opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+function _updateExecutorSelect(names) {
+  // 詳細フォームの実施者選択
+  var sel = document.getElementById('d-member');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  names.forEach(function(n) {
+    var opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+}
+
+// 起動時初期化
+function initFlyerDropdown() {
+  google.script.run
+    .withSuccessHandler(function(types) {
+      g.flyerTypes = types;
+      _updateFlyerDropdown(types);
+      _updateDetailFlyerSelect(types);
+      google.script.run
+        .withSuccessHandler(function(targets) {
+          g.flyerTargets = targets || {};
+          updateFlyerCountLabel();
+        })
+        .apiGetFlyerTargets();
+    })
+    .apiGetFlyerTypes();
+
+  // 実行者リストも取得（なければ自動同期）
+  google.script.run
+    .withSuccessHandler(function(names) {
+      if (names && names.length > 0) {
+        _updateExecutorSelect(names);
+      } else {
+        // 初回: 配布記録から自動収集
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) _updateExecutorSelect(result.names || []);
+          })
+          .apiSyncExecutors();
+      }
+    })
+    .apiGetExecutors();
+}
+
+// ============================================================
+// ヘッダー枚数ラベル
+// ============================================================
+function updateFlyerCountLabel() {
+  var label = document.getElementById('flyer-count-label');
+  if (!label) return;
+
+  // 全エリア（市町村フィルタ関係なく）の合計を集計するため
+  // g.areas は cityFilter 済みなので、全体表示のときは全エリアが入っている
+  var ff = g.flyerFilter || '';
+
+  // チラシ種別ごとの合計を計算
+  var totals = {};
+  (g.areas || []).forEach(function(a) {
+    var ft = a.flyerType || '';
+    var dc = parseInt(a.distCount, 10) || 0;
+    if (dc <= 0) return;
+    totals[ft] = (totals[ft] || 0) + dc;
+  });
+
+  if (ff) {
+    // 特定チラシ選択中
+    var dist   = totals[ff] || 0;
+    var target = g.flyerTargets[ff] || 0;
+    label.textContent = target > 0
+      ? ff + '：' + dist.toLocaleString() + '／' + target.toLocaleString() + '枚'
+      : ff + '：' + dist.toLocaleString() + '枚';
+  } else {
+    // 全種別：チラシごとに表示
+    var parts = [];
+    Object.keys(g.flyerTargets).forEach(function(name) {
+      var dist   = totals[name] || 0;
+      var target = g.flyerTargets[name] || 0;
+      parts.push(name + '：' + dist.toLocaleString() + '／' + target.toLocaleString() + '枚');
+    });
+    // 設定のないチラシも合計として表示
+    var allDist = 0;
+    Object.keys(totals).forEach(function(k) { allDist += totals[k]; });
+    if (parts.length === 0 && allDist > 0) {
+      label.textContent = '合計：' + allDist.toLocaleString() + '枚';
+    } else {
+      label.textContent = parts.join('　');
+    }
+  }
+}
+</script>
+
+<!-- ============================================================
+     マンション管理機能
+     ============================================================ -->
+<script>
+// ============================================================
+// マンション状態
+// ============================================================
+var g_mansionVisible = false;
+var g_mansionMarkers = {};   // id → google.maps.Marker
+var g_allMansions    = [];
+var g_mansionEditingId = null;
+var g_mansionNewLatLng = null;
+var g_mansionPinMode   = false;
+var g_mansionClickGuard = false;
+
+var MANSION_PIN_COLOR = {
+  '配布OK':           '#4caf50',
+  'オートロックNG':   '#2196f3',
+  '管理人NG':         '#f44336',
+  'お断り貼り紙あり': '#ff9800'
+};
+
+// ============================================================
+// マンションモード ON/OFF
+// ============================================================
+function toggleMansionMode() {
+  g_mansionVisible = !g_mansionVisible;
+  var btn = document.getElementById('btn-mansion');
+  var legend = document.getElementById('mansion-legend');
+  if (g_mansionVisible) {
+    btn.classList.add('active');
+    if (legend) legend.style.display = '';
+    loadMansions();
+    switchTab('mansions', document.querySelector('.tab-btn:nth-child(2)'));
+  } else {
+    btn.classList.remove('active');
+    if (legend) legend.style.display = 'none';
+    _clearMansionMarkers();
+  }
+}
+
+function _clearMansionMarkers() {
+  Object.keys(g_mansionMarkers).forEach(function(k) {
+    g_mansionMarkers[k].setMap(null);
+  });
+  g_mansionMarkers = {};
+}
+
+// ============================================================
+// データ読み込み
+// ============================================================
+function loadMansions() {
+  var cityFilter   = document.getElementById('mansion-city-filter').value || null;
+  var statusFilter = document.getElementById('mansion-ok-only').checked ? '配布OK' : null;
+
+  var mansionRunner = google.script.run
+    .withSuccessHandler(function(mansions) {
+      g_allMansions = mansions || [];
+      if (g_mansionVisible) _renderMansionMarkers();
+      _renderMansionList();
+    })
+    .withFailureHandler(function(err) {
+      console.error('マンションデータ取得失敗:', err.message);
+    });
+
+  if (g.flyerFilter) {
+    mansionRunner.apiGetMansionListForFlyer(g.flyerFilter, cityFilter, statusFilter);
+  } else {
+    mansionRunner.apiGetMansionList(cityFilter, statusFilter);
+  }
+}
+
+// ============================================================
+// マーカー描画
+// ============================================================
+function _renderMansionMarkers() {
+  _clearMansionMarkers();
+  if (!g.map) return;
+  g_allMansions.forEach(function(m) {
+    if (!m.lat || !m.lng) return;
+    var color = MANSION_PIN_COLOR[m.status] || '#9e9e9e';
+    var marker = new google.maps.Marker({
+      position: { lat: parseFloat(m.lat), lng: parseFloat(m.lng) },
+      map: g.map,
+      title: m.name,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 11,
+        fillColor: color,
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2.5
+      },
+      zIndex: 100
+    });
+    (function(mansion, mk) {
+      mk.addListener('click', function() {
+        g_mansionClickGuard = true;
+        openMansionEditForm(mansion);
+      });
+    })(m, marker);
+    g_mansionMarkers[m.id] = marker;
+  });
+}
+
+// ============================================================
+// サイドリスト描画
+// ============================================================
+function _renderMansionList() {
+  var container = document.getElementById('mansion-list');
+  var countLabel = document.getElementById('mansion-count-label');
+  if (!container) return;
+
+  countLabel.textContent = g_allMansions.length + '件';
+
+  if (g_allMansions.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:#888;font-size:12px;">登録なし</div>';
+    return;
+  }
+
+  var html = '';
+  g_allMansions.forEach(function(m) {
+    var color = MANSION_PIN_COLOR[m.status] || '#9e9e9e';
+    var visit = m.lastVisit ? '最終: ' + m.lastVisit : '未訪問';
+    html += '<div class="mansion-item" onclick="openMansionEditFormById(' + m.id + ')">' +
+      '<div class="mansion-name">' +
+        '<span class="mansion-status-dot" style="background:' + color + ';"></span>' +
+        esc(m.name) +
+      '</div>' +
+      '<div class="mansion-meta">' +
+        esc(m.city || '') + ' ' + esc(m.address || '') +
+      '</div>' +
+      '<div class="mansion-meta" style="color:#888;">' + visit +
+        (m.lastCount ? ' / ' + m.lastCount + '枚' : '') +
+      '</div>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function openMansionEditFormById(id) {
+  var m = g_allMansions.filter(function(x) { return x.id === id; })[0];
+  if (m) openMansionEditForm(m);
+}
+
+// ============================================================
+// ピンモード
+// ============================================================
+function startMansionPinMode() {
+  g_mansionPinMode = true;
+  document.getElementById('mansion-pin-mode').style.display = 'block';
+}
+
+function cancelMansionPinMode() {
+  g_mansionPinMode   = false;
+  g_mansionNewLatLng = null;
+  document.getElementById('mansion-pin-mode').style.display = 'none';
+}
+
+// ============================================================
+// フォーム操作
+// ============================================================
+function openMansionEditForm(mansion) {
+  g_mansionEditingId = mansion.id;
+  g_mansionNewLatLng = null;
+  document.getElementById('mansion-popup-title').textContent = mansion.name || 'マンション情報更新';
+  document.getElementById('mf-name').value    = mansion.name    || '';
+  document.getElementById('mf-address').value = mansion.address || '';
+  document.getElementById('mf-city').value    = mansion.city    || '函館市';
+  document.getElementById('mf-count').value   = mansion.lastCount || '';
+  document.getElementById('mf-memo').value    = mansion.memo    || '';
+  document.getElementById('mansion-popup-message').textContent = '';
+  setMansionStatus(mansion.status || '配布OK');
+  setMansionStatusType(mansion.statusType || '');
+  var info = '';
+  if (mansion.lastVisit) {
+    info = '<div class="last-visit-badge">最終訪問: ' + esc(mansion.lastVisit) +
+      (mansion.lastCount ? ' (' + mansion.lastCount + '枚)' : '') + '</div>';
+  }
+  document.getElementById('m-last-visit-info').innerHTML = info;
+  _initMansionFormDropdowns();
+  showMansionPopup(true);
+}
+
+function openMansionNewForm(address, name) {
+  cancelMansionPinMode();
+  g_mansionEditingId = null;
+  document.getElementById('mansion-popup-title').textContent = '新規マンション登録';
+  document.getElementById('mf-name').value    = name    || '';
+  document.getElementById('mf-address').value = address || '';
+  document.getElementById('mf-city').value    = document.getElementById('mansion-city-filter').value || '函館市';
+  document.getElementById('mf-count').value   = '';
+  document.getElementById('mf-memo').value    = '';
+  document.getElementById('m-last-visit-info').innerHTML = '';
+  document.getElementById('mansion-popup-message').textContent = '';
+  setMansionStatus('配布OK');
+  setMansionStatusType('');
+  _initMansionFormDropdowns();
+  showMansionPopup(true);
+}
+
+function _initMansionFormDropdowns() {
+  // チラシ
+  var fsel = document.getElementById('mf-flyer');
+  fsel.innerHTML = '';
+  (g.flyerTypes || []).forEach(function(t) {
+    var o = document.createElement('option');
+    o.value = t; o.textContent = t; fsel.appendChild(o);
+  });
+  // メンバー
+  var msel = document.getElementById('mf-member');
+  msel.innerHTML = '<option value="">（未入力）</option>';
+  google.script.run
+    .withSuccessHandler(function(members) {
+      (members || []).forEach(function(m) {
+        var o = document.createElement('option');
+        o.value = m.name; o.textContent = m.name; msel.appendChild(o);
+      });
+    })
+    .apiGetMemberList();
+}
+
+function selectMansionStatus(btn) { setMansionStatus(btn.getAttribute('data-val')); }
+function setMansionStatus(val) {
+  document.querySelectorAll('.m-status-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.getAttribute('data-val') === val);
+  });
+  var isNg = (val === '管理人NG' || val === 'お断り貼り紙あり');
+  document.getElementById('m-status-type-group').style.display = isNg ? '' : 'none';
+  document.getElementById('m-count-row').classList.toggle('show', val === '配布OK');
+}
+function selectMansionStatusType(btn) { setMansionStatusType(btn.getAttribute('data-val')); }
+function setMansionStatusType(val) {
+  document.querySelectorAll('.m-type-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.getAttribute('data-val') === val);
+  });
+}
+function getMansionStatus() {
+  var b = document.querySelector('.m-status-btn.selected');
+  return b ? b.getAttribute('data-val') : '配布OK';
+}
+function getMansionStatusType() {
+  var b = document.querySelector('.m-type-btn.selected');
+  return b ? b.getAttribute('data-val') : '';
+}
+
+// ============================================================
+// フォーム送信
+// ============================================================
+function submitMansionForm() {
+  var status = getMansionStatus();
+  var name   = document.getElementById('mf-name').value.trim();
+  if (!name) {
+    document.getElementById('mansion-popup-message').textContent = 'マンション名を入力してください';
+    document.getElementById('mansion-popup-message').style.color = 'red';
+    return;
+  }
+  var params = {
+    name:       name,
+    address:    document.getElementById('mf-address').value.trim(),
+    city:       document.getElementById('mf-city').value,
+    status:     status,
+    statusType: getMansionStatusType(),
+    distCount:  parseInt(document.getElementById('mf-count').value, 10) || 0,
+    flyerType:  document.getElementById('mf-flyer').value,
+    memberName: document.getElementById('mf-member').value,
+    memo:       document.getElementById('mf-memo').value.trim()
+  };
+
+  showLoading(true);
+
+  if (g_mansionEditingId) {
+    params.rowId = g_mansionEditingId;
+    if (g.flyerFilter) {
+      google.script.run
+        .withSuccessHandler(_onMansionSaved)
+        .withFailureHandler(_onMansionError)
+        .apiRecordMansionVisitInFlyer(g.flyerFilter, params);
+    } else {
+      google.script.run
+        .withSuccessHandler(_onMansionSaved)
+        .withFailureHandler(_onMansionError)
+        .apiRecordMansionVisit(params);
+    }
+  } else {
+    if (g_mansionNewLatLng) {
+      params.lat = g_mansionNewLatLng.lat();
+      params.lng = g_mansionNewLatLng.lng();
+      _doAddMansion(params);
+    } else {
+      var q = params.address || (params.name + ' ' + params.city);
+      google.script.run
+        .withSuccessHandler(function(geo) {
+          if (geo && geo.success) { params.lat = geo.lat; params.lng = geo.lng; }
+          _doAddMansion(params);
+        })
+        .withFailureHandler(function() { _doAddMansion(params); })
+        .apiGeocodeAddress(q);
+    }
+  }
+}
+
+function _doAddMansion(params) {
+  if (g.flyerFilter) {
+    google.script.run
+      .withSuccessHandler(_onMansionSaved)
+      .withFailureHandler(_onMansionError)
+      .apiAddMansionInFlyer(g.flyerFilter, params);
+  } else {
+    google.script.run
+      .withSuccessHandler(_onMansionSaved)
+      .withFailureHandler(_onMansionError)
+      .apiAddMansion(params);
+  }
+}
+
+function _onMansionSaved(result) {
+  showLoading(false);
+  var msg = document.getElementById('mansion-popup-message');
+  if (result && result.success) {
+    msg.textContent = '保存しました';
+    msg.style.color = 'green';
+    setTimeout(function() {
+      closeMansionPopup();
+      loadMansions();
+    }, 700);
+  } else {
+    msg.textContent = 'エラー: ' + (result ? (result.error || '不明') : '不明');
+    msg.style.color = 'red';
+  }
+}
+
+function _onMansionError(err) {
+  showLoading(false);
+  var msg = document.getElementById('mansion-popup-message');
+  msg.textContent = '通信エラー: ' + err.message;
+  msg.style.color = 'red';
+}
+
+// ============================================================
+// ポップアップ制御
+// ============================================================
+function showMansionPopup(show) {
+  var el = document.getElementById('mansion-popup-overlay');
+  if (show) el.classList.add('show');
+  else el.classList.remove('show');
+}
+function closeMansionPopup() {
+  showMansionPopup(false);
+  g_mansionNewLatLng = null;
+}
+function onMansionOverlayClick(event) {
+  if (event.target === document.getElementById('mansion-popup-overlay')) closeMansionPopup();
+}
+
+// initMap から呼び出す（マップクリックにマンションピンモードを追加）
+function _initMansionMapClick() {
+  if (!g.map) return;
+  g.map.addListener('click', function(event) {
+    setTimeout(function() {
+      if (g_mansionClickGuard) { g_mansionClickGuard = false; return; }
+      if (!g_mansionPinMode) return;
+      g_mansionNewLatLng = event.latLng;
+      // 逆ジオコーディング
+      google.script.run
+        .withSuccessHandler(function(result) {
+          var address = (result && result.success) ? result.address || '' : '';
+          var bname   = (result && result.success) ? result.buildingName || '' : '';
+          openMansionNewForm(address, bname);
+        })
+        .withFailureHandler(function() { openMansionNewForm('', ''); })
+        .apiReverseGeocode(event.latLng.lat(), event.latLng.lng());
+    }, 80);
+  });
+}
+</script>
+
+<!-- Google Maps API（GASテンプレート変数でキー注入） -->
+<script>
+var MAPS_API_KEY_SET = '<?= mapsApiKey ?>' !== '';
+if (!MAPS_API_KEY_SET) {
+  window.initMap = function() {
+    document.getElementById('map').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;' +
+      'flex-direction:column;gap:12px;color:#888;background:#f9f9f9;">' +
+      '<div style="font-size:32px;">🗺️</div>' +
+      '<div style="font-size:14px;font-weight:bold;">Google Maps APIキー未設定</div>' +
+      '<div style="font-size:12px;">GASのスクリプトプロパティに MAPS_API_KEY を設定後、再デプロイしてください</div>' +
+      '</div>';
+    initApp();
+  };
+  document.write('<scr' + 'ipt>window.initMap();<\/scr' + 'ipt>');
+} else {
+  document.write('<scr' + 'ipt async defer src="https://maps.googleapis.com/maps/api/js' +
+    '?key=<?= mapsApiKey ?>&callback=initMap&language=ja"><\/scr' + 'ipt>');
+}
+</script>
+
+</body>
+</html>

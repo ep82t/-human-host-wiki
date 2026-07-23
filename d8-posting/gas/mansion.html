@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>マンション配布 | d8-posting</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; font-size: 14px; }
+
+/* ヘッダー */
+#header {
+  background: #e65100; color: #fff;
+  padding: 10px 14px; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 10px; position: relative; z-index: 10;
+}
+#header h1 { font-size: 15px; font-weight: bold; }
+.filter-group { display: flex; gap: 6px; align-items: center; }
+.filter-group label { font-size: 12px; }
+select, button {
+  padding: 5px 10px; border: none; border-radius: 4px;
+  font-size: 13px; cursor: pointer;
+}
+select { background: #fff; color: #333; }
+button { background: #4caf50; color: #fff; }
+button:hover { background: #388e3c; }
+#btn-add-new { background: #1976d2; }
+#btn-add-new:hover { background: #0d47a1; }
+
+/* 地図 */
+#map { width: 100%; height: calc(100vh - 52px); }
+
+/* マンション件数バッジ */
+#mansion-count {
+  background: rgba(255,255,255,0.2);
+  border-radius: 12px; padding: 3px 10px;
+  font-size: 12px;
+}
+
+/* ポップアップフォーム */
+#popup-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 1000;
+  align-items: flex-end; justify-content: center;
+}
+#popup-overlay.show { display: flex; }
+#popup-form {
+  background: #fff; width: 100%; max-width: 480px;
+  border-radius: 16px 16px 0 0; padding: 20px 16px 24px;
+  max-height: 90vh; overflow-y: auto;
+}
+#popup-form h2 {
+  font-size: 15px; font-weight: bold; margin-bottom: 14px;
+  color: #e65100; display: flex; justify-content: space-between;
+  align-items: center;
+}
+#popup-close {
+  background: none; border: none; font-size: 20px;
+  cursor: pointer; color: #888; padding: 0 4px;
+}
+.form-row { margin-bottom: 12px; }
+.form-row label {
+  display: block; font-size: 12px; font-weight: bold;
+  color: #555; margin-bottom: 4px;
+}
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid #ccc; border-radius: 6px;
+  font-size: 14px; font-family: inherit;
+}
+.form-row textarea { resize: vertical; min-height: 60px; }
+
+/* ステータスボタン群 */
+.status-btn-group {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.status-btn {
+  flex: 1 1 calc(50% - 8px); padding: 10px 6px;
+  border: 2px solid #ddd; border-radius: 8px;
+  background: #fafafa; cursor: pointer; font-size: 13px;
+  text-align: center; transition: all 0.15s;
+}
+.status-btn.selected { border-width: 3px; }
+.status-btn[data-val="配布OK"].selected         { border-color: #4caf50; background: #e8f5e9; }
+.status-btn[data-val="オートロックNG"].selected  { border-color: #1976d2; background: #e3f2fd; }
+.status-btn[data-val="管理人NG"].selected        { border-color: #f44336; background: #ffebee; }
+.status-btn[data-val="お断り貼り紙あり"].selected { border-color: #ff9800; background: #fff3e0; }
+
+/* 永続NG / 状況次第 */
+.status-type-group { display: flex; gap: 8px; margin-top: 8px; }
+.type-btn {
+  flex: 1; padding: 7px; border: 2px solid #ddd;
+  border-radius: 6px; background: #fafafa;
+  cursor: pointer; font-size: 12px; text-align: center;
+}
+.type-btn.selected { border-color: #9c27b0; background: #f3e5f5; }
+
+/* 配布OK時のみ表示する枚数欄 */
+#count-row { display: none; }
+#count-row.show { display: block; }
+
+/* 送信ボタン */
+#btn-submit {
+  width: 100%; padding: 13px; background: #e65100;
+  color: #fff; font-size: 15px; font-weight: bold;
+  border-radius: 8px; margin-top: 8px; border: none;
+  cursor: pointer;
+}
+#btn-submit:hover { background: #bf360c; }
+#popup-message {
+  font-size: 12px; text-align: center; margin-top: 8px;
+}
+
+/* 最終訪問バッジ */
+.last-visit-badge {
+  display: inline-block; background: #fff3e0;
+  border: 1px solid #ff9800; border-radius: 4px;
+  padding: 2px 6px; font-size: 11px; color: #e65100; margin-top: 6px;
+}
+
+/* ローディング */
+#loading {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.3); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#loading.show { display: flex; }
+.spinner {
+  width: 40px; height: 40px; border: 4px solid #fff;
+  border-top-color: transparent; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 凡例 */
+#legend {
+  position: absolute; bottom: 32px; left: 10px;
+  background: rgba(255,255,255,0.95); border-radius: 8px;
+  padding: 8px 12px; font-size: 12px; z-index: 5;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+#legend h4 { font-size: 11px; margin-bottom: 4px; color: #888; }
+.legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div></div>
+
+<!-- ヘッダー -->
+<div id="header">
+  <h1>マンション配布</h1>
+  <div class="filter-group">
+    <label>チラシ:</label>
+    <select id="flyer-filter" onchange="onFilterChange()">
+      <option value="">チラシを選択</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>市町村:</label>
+    <select id="city-filter" onchange="onFilterChange()">
+      <option value="">全体</option>
+      <option value="函館市">函館市</option>
+      <option value="七飯町">七飯町</option>
+      <option value="北斗市">北斗市</option>
+      <option value="森町">森町</option>
+      <option value="木古内町">木古内町</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>
+      <input type="checkbox" id="ok-only" onchange="onFilterChange()" style="margin-right:4px;">
+      配布OKのみ
+    </label>
+  </div>
+  <span id="mansion-count">0件</span>
+  <button id="btn-add-new" onclick="startMapPinMode()">＋新規登録</button>
+  <div class="filter-group">
+    <input type="text" id="addr-search" placeholder="住所で検索..."
+      style="padding:5px 8px;border:none;border-radius:4px;font-size:13px;width:180px;"
+      onkeydown="if(event.key==='Enter') searchByAddress()">
+    <button onclick="searchByAddress()" style="background:#7b1fa2;">🔍</button>
+  </div>
+  <button id="btn-mylocation" onclick="moveToMyLocation()" title="現在地へ移動"
+    style="background:#0288d1;font-size:16px;padding:5px 10px;border-radius:4px;border:none;color:#fff;cursor:pointer;">
+    📍
+  </button>
+</div>
+
+<!-- 地図タップ誘導オーバーレイ -->
+<div id="pin-mode-overlay" style="display:none; position:fixed; top:52px; left:0; right:0;
+  background:rgba(230,81,0,0.9); color:#fff; text-align:center; padding:12px;
+  font-size:14px; font-weight:bold; z-index:100;">
+  📍 登録したい場所を地図上でタップしてください
+  <button onclick="cancelPinMode()" style="margin-left:12px; background:rgba(255,255,255,0.3);
+    color:#fff; border:1px solid #fff; border-radius:4px; padding:4px 10px; cursor:pointer;">
+    キャンセル
+  </button>
+</div>
+
+<!-- 地図 -->
+<div id="map"></div>
+
+<!-- 凡例 -->
+<div id="legend">
+  <h4>ピン凡例</h4>
+  <div class="legend-item"><div class="legend-dot" style="background:#4caf50"></div>配布OK</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2196f3"></div>オートロックNG</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f44336"></div>管理人NG</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff9800"></div>お断り貼り紙あり</div>
+</div>
+
+<!-- ポップアップフォーム -->
+<div id="popup-overlay" onclick="onOverlayClick(event)">
+  <div id="popup-form">
+    <h2>
+      <span id="popup-title">マンション情報</span>
+      <button id="popup-close" onclick="closePopup()">✕</button>
+    </h2>
+
+    <div class="form-row">
+      <label>マンション名</label>
+      <input type="text" id="f-name" placeholder="例: ○○マンション">
+    </div>
+    <div class="form-row">
+      <label>住所</label>
+      <input type="text" id="f-address" placeholder="例: 函館市湯川町1丁目">
+    </div>
+    <div class="form-row">
+      <label>市町村</label>
+      <select id="f-city">
+        <option value="函館市">函館市</option>
+        <option value="七飯町">七飯町</option>
+        <option value="北斗市">北斗市</option>
+        <option value="森町">森町</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>配布ステータス</label>
+      <div class="status-btn-group">
+        <div class="status-btn" data-val="配布OK" onclick="selectStatus(this)">配布OK</div>
+        <div class="status-btn" data-val="オートロックNG" onclick="selectStatus(this)">オートロックNG</div>
+        <div class="status-btn" data-val="管理人NG" onclick="selectStatus(this)">管理人NG</div>
+        <div class="status-btn" data-val="お断り貼り紙あり" onclick="selectStatus(this)">お断り貼り紙あり</div>
+      </div>
+      <!-- NGの場合のみ表示 -->
+      <div class="status-type-group" id="status-type-group" style="display:none">
+        <div class="type-btn" data-val="状況次第" onclick="selectStatusType(this)">状況次第</div>
+        <div class="type-btn" data-val="永続NG" onclick="selectStatusType(this)">永続NG</div>
+      </div>
+    </div>
+
+    <div class="form-row" id="count-row">
+      <label>配布枚数</label>
+      <input type="number" id="f-count" min="0" placeholder="0">
+    </div>
+    <div class="form-row">
+      <label>チラシ種別</label>
+      <select id="f-flyer"></select>
+    </div>
+    <div class="form-row">
+      <label>実施者名</label>
+      <select id="f-member"></select>
+    </div>
+    <div class="form-row">
+      <label>メモ</label>
+      <textarea id="f-memo" placeholder="特記事項（例: 1Fのポストのみ可能）"></textarea>
+    </div>
+
+    <div id="last-visit-info"></div>
+
+    <button id="btn-submit" onclick="submitForm()">保存する</button>
+    <div id="popup-message"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// グローバル状態
+// ============================================================
+var g = {
+  map: null,
+  mansions: [],
+  markers: {},      // id → google.maps.Marker
+  infoWindows: {},  // id → google.maps.InfoWindow
+  activeInfoWindow: null,
+  editingId: null,  // null = 新規, number = 更新対象rowId
+  newLatLng: null,  // 地図タップで新規追加する場合の座標
+  cityFilter: '',
+  flyerFilter: '',  // 選択中のチラシ（''=マスター台帳を表示）
+  okOnly: false
+};
+
+var PIN_COLOR = {
+  '配布OK':          '#4caf50',
+  'オートロックNG':  '#2196f3',
+  '管理人NG':        '#f44336',
+  'お断り貼り紙あり':'#ff9800'
+};
+
+// ============================================================
+// 初期化
+// ============================================================
+function initApp() {
+  initFlyerDropdown();
+  initMemberDropdown();
+  loadMansions();
+  loadBoundaries();
+}
+
+// ============================================================
+// 境界線表示
+// ============================================================
+function loadBoundaries() {
+  google.script.run
+    .withSuccessHandler(function(result) {
+      if (!result || !result.features || result.features.length === 0) return;
+      g.map.data.addGeoJson(result);
+      g.map.data.setStyle({
+        fillColor:     '#1976d2',
+        fillOpacity:   0.04,
+        strokeColor:   '#1976d2',
+        strokeWeight:  1.2,
+        strokeOpacity: 0.6,
+        clickable:     false
+      });
+    })
+    .withFailureHandler(function(err) {
+      console.warn('境界データ取得失敗:', err.message);
+    })
+    .apiGetBoundaryData(null);
+}
+
+// ============================================================
+// 住所検索
+// ============================================================
+function searchByAddress() {
+  var query = document.getElementById('addr-search').value.trim();
+  if (!query) return;
+
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(function(geo) {
+      showLoading(false);
+      if (!geo || !geo.success) {
+        alert('住所が見つかりませんでした: ' + query);
+        return;
+      }
+      var latlng = new google.maps.LatLng(geo.lat, geo.lng);
+      g.map.panTo(latlng);
+      g.map.setZoom(17);
+
+      // 既存マンションが近くにあるか確認（100m以内）
+      var nearby = null;
+      g.mansions.forEach(function(m) {
+        if (!m.lat || !m.lng) return;
+        var d = _distanceM(geo.lat, geo.lng, parseFloat(m.lat), parseFloat(m.lng));
+        if (d < 100) nearby = m;
+      });
+
+      if (nearby) {
+        // 近くに登録済みマンションあり → 編集フォームを開く
+        var marker = g.markers[nearby.id];
+        openEditForm(nearby, marker);
+      } else {
+        // 新規登録フォームを開く
+        g.newLatLng = latlng;
+        openNewMansionForm(query, '');
+      }
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      alert('検索エラー: ' + err.message);
+    })
+    .apiGeocodeAddress(query);
+}
+
+// 2点間の距離（メートル）
+function _distanceM(lat1, lng1, lat2, lng2) {
+  var R = 6371000;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function initFlyerDropdown() {
+  google.script.run
+    .withSuccessHandler(function(types) {
+      // ヘッダーのチラシ選択（マップ・記録先の切り替え）
+      var headerSel = document.getElementById('flyer-filter');
+      headerSel.innerHTML = '<option value="">チラシを選択</option>';
+      types.forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        headerSel.appendChild(opt);
+      });
+
+      // フォーム内のチラシ種別
+      var sel = document.getElementById('f-flyer');
+      sel.innerHTML = '';
+      types.forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        sel.appendChild(opt);
+      });
+    })
+    .apiGetFlyerTypes();
+}
+
+function initMemberDropdown() {
+  google.script.run
+    .withSuccessHandler(function(members) {
+      var sel = document.getElementById('f-member');
+      sel.innerHTML = '<option value="">（未入力）</option>';
+      members.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value = m.name; opt.textContent = m.name;
+        sel.appendChild(opt);
+      });
+    })
+    .apiGetMemberList();
+}
+
+function loadMansions() {
+  showLoading(true);
+  var cityFilter = g.cityFilter || null;
+  var statusFilter = g.okOnly ? '配布OK' : null;
+
+  var runner = google.script.run
+    .withSuccessHandler(function(mansions) {
+      g.mansions = mansions;
+      renderMarkers();
+      document.getElementById('mansion-count').textContent = mansions.length + '件';
+      showLoading(false);
+    })
+    .withFailureHandler(function(err) {
+      alert('マンションデータの取得に失敗: ' + err.message);
+      showLoading(false);
+    });
+
+  if (g.flyerFilter) {
+    // チラシ選択中 → チラシSSのマンションシートから取得
+    runner.apiGetMansionListForFlyer(g.flyerFilter, cityFilter, statusFilter);
+  } else {
+    // 未選択 → マスター台帳から取得（従来どおり）
+    runner.apiGetMansionList(cityFilter, statusFilter);
+  }
+}
+
+// ============================================================
+// フィルター
+// ============================================================
+function onFilterChange() {
+  g.cityFilter  = document.getElementById('city-filter').value;
+  g.flyerFilter = document.getElementById('flyer-filter').value;
+  g.okOnly      = document.getElementById('ok-only').checked;
+  loadMansions();
+}
+
+// ============================================================
+// マーカーレンダリング
+// ============================================================
+function renderMarkers() {
+  // 既存マーカーをクリア
+  for (var k in g.markers) {
+    g.markers[k].setMap(null);
+  }
+  g.markers = {};
+
+  g.mansions.forEach(function(m) {
+    if (!m.lat || !m.lng) return;
+    addMarker(m);
+  });
+}
+
+function addMarker(mansion) {
+  var color = PIN_COLOR[mansion.status] || '#9e9e9e';
+  var marker = new google.maps.Marker({
+    position: { lat: parseFloat(mansion.lat), lng: parseFloat(mansion.lng) },
+    map: g.map,
+    title: mansion.name,
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 10,
+      fillColor: color,
+      fillOpacity: 1,
+      strokeColor: '#fff',
+      strokeWeight: 2.5
+    }
+  });
+
+  marker.addListener('click', function() {
+    if (g.activeInfoWindow) g.activeInfoWindow.close();
+    openEditForm(mansion, marker);
+  });
+
+  g.markers[mansion.id] = marker;
+}
+
+// ============================================================
+// 地図タップ → 新規登録
+// ============================================================
+function initMapClickListener() {
+  g.map.addListener('click', function(event) {
+    setTimeout(function() {
+      if (g._markerClicked) { g._markerClicked = false; return; }
+
+      // 新規登録モード（ピン配置待ち）のときだけフォームを開く
+      if (!g._pinMode) return;
+
+      g.newLatLng = event.latLng;
+      var lat = event.latLng.lat();
+      var lng = event.latLng.lng();
+
+      // サーバーサイド逆ジオコーディングで住所を取得
+      google.script.run
+        .withSuccessHandler(function(result) {
+          var address = '';
+          var name    = '';
+          if (result && result.success) {
+            address = result.address || '';
+            name    = result.buildingName || '';
+          }
+          openNewMansionForm(address, name);
+        })
+        .withFailureHandler(function() {
+          openNewMansionForm('', '');
+        })
+        .apiReverseGeocode(lat, lng);
+    }, 100);
+  });
+}
+
+// ============================================================
+// フォーム操作
+// ============================================================
+function startMapPinMode() {
+  document.getElementById('pin-mode-overlay').style.display = 'block';
+  g._pinMode = true;
+}
+
+function cancelPinMode() {
+  document.getElementById('pin-mode-overlay').style.display = 'none';
+  g._pinMode = false;
+  g.newLatLng = null;
+}
+
+function openNewMansionForm(address, name) {
+  document.getElementById('pin-mode-overlay').style.display = 'none';
+  g._pinMode = false;
+  g.editingId = null;
+  document.getElementById('popup-title').textContent = '新規マンション登録';
+  document.getElementById('f-name').value    = name || '';
+  document.getElementById('f-address').value = address || '';
+  document.getElementById('f-city').value    = g.cityFilter || '函館市';
+  document.getElementById('f-count').value   = '';
+  document.getElementById('f-flyer').value   = g.flyerFilter || '';
+  document.getElementById('f-memo').value    = '';
+  document.getElementById('last-visit-info').innerHTML = '';
+  document.getElementById('popup-message').textContent = '';
+  setStatus('配布OK');
+  showPopup(true);
+}
+
+function openEditForm(mansion, marker) {
+  g._markerClicked = true;
+  g.editingId = mansion.id;
+
+  document.getElementById('popup-title').textContent = mansion.name || 'マンション情報更新';
+  document.getElementById('f-name').value    = mansion.name || '';
+  document.getElementById('f-address').value = mansion.address || '';
+  document.getElementById('f-city').value    = mansion.city || '函館市';
+  document.getElementById('f-count').value   = mansion.lastCount || '';
+  document.getElementById('f-flyer').value   = g.flyerFilter || '';
+  document.getElementById('f-member').value  = '';
+  document.getElementById('f-memo').value    = mansion.memo || '';
+  document.getElementById('popup-message').textContent = '';
+
+  setStatus(mansion.status || '配布OK');
+  setStatusType(mansion.statusType || '');
+
+  var info = '';
+  if (mansion.lastVisit) {
+    info = '<div class="last-visit-badge">最終訪問: ' + esc(mansion.lastVisit) +
+      (mansion.lastCount ? ' (' + mansion.lastCount + '枚)' : '') + '</div>';
+  }
+  document.getElementById('last-visit-info').innerHTML = info;
+
+  showPopup(true);
+}
+
+function selectStatus(btn) {
+  setStatus(btn.getAttribute('data-val'));
+}
+
+function setStatus(val) {
+  document.querySelectorAll('.status-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.getAttribute('data-val') === val);
+  });
+  var isNg = (val === '管理人NG' || val === 'お断り貼り紙あり');
+  document.getElementById('status-type-group').style.display = isNg ? '' : 'none';
+  document.getElementById('count-row').classList.toggle('show', val === '配布OK');
+}
+
+function selectStatusType(btn) {
+  setStatusType(btn.getAttribute('data-val'));
+}
+
+function setStatusType(val) {
+  document.querySelectorAll('.type-btn').forEach(function(b) {
+    b.classList.toggle('selected', b.getAttribute('data-val') === val);
+  });
+}
+
+function getSelectedStatus() {
+  var btn = document.querySelector('.status-btn.selected');
+  return btn ? btn.getAttribute('data-val') : '配布OK';
+}
+
+function getSelectedStatusType() {
+  var btn = document.querySelector('.type-btn.selected');
+  return btn ? btn.getAttribute('data-val') : '';
+}
+
+// ============================================================
+// フォーム送信
+// ============================================================
+function submitForm() {
+  var status = getSelectedStatus();
+  var name   = document.getElementById('f-name').value.trim();
+
+  if (!name) {
+    document.getElementById('popup-message').textContent = 'マンション名を入力してください';
+    document.getElementById('popup-message').style.color = 'red';
+    return;
+  }
+
+  var params = {
+    name:        name,
+    address:     document.getElementById('f-address').value.trim(),
+    city:        document.getElementById('f-city').value,
+    status:      status,
+    statusType:  getSelectedStatusType(),
+    distCount:   parseInt(document.getElementById('f-count').value, 10) || 0,
+    flyerType:   document.getElementById('f-flyer').value.trim(),
+    memberName:  document.getElementById('f-member').value.trim(),
+    memo:        document.getElementById('f-memo').value.trim()
+  };
+
+  showLoading(true);
+
+  if (g.editingId) {
+    // 既存マンションの訪問記録
+    params.rowId = g.editingId;
+    var saveRunner = google.script.run
+      .withSuccessHandler(onSaveSuccess)
+      .withFailureHandler(onSaveError);
+    if (g.flyerFilter) {
+      // チラシ選択中 → チラシSSに記録
+      saveRunner.apiRecordMansionVisitInFlyer(g.flyerFilter, params);
+    } else {
+      saveRunner.apiRecordMansionVisit(params);
+    }
+  } else {
+    // 新規登録：座標があればそのまま保存、なければジオコーディング
+    if (g.newLatLng) {
+      params.lat = g.newLatLng.lat();
+      params.lng = g.newLatLng.lng();
+      _doAddMansion(params);
+    } else {
+      // 住所 → なければ「マンション名 市町村」でサーバーサイドジオコーディング
+      var geocodeQuery = params.address || (params.name + ' ' + params.city);
+      google.script.run
+        .withSuccessHandler(function(geo) {
+          if (geo && geo.success) {
+            params.lat = geo.lat;
+            params.lng = geo.lng;
+          }
+          _doAddMansion(params);
+        })
+        .withFailureHandler(function() {
+          _doAddMansion(params);
+        })
+        .apiGeocodeAddress(geocodeQuery);
+    }
+  }
+}
+
+function _doAddMansion(params) {
+  var runner = google.script.run
+    .withSuccessHandler(onAddSuccess)
+    .withFailureHandler(onSaveError);
+  if (g.flyerFilter) {
+    // チラシ選択中 → チラシSSのマンションシートに追加
+    runner.apiAddMansionInFlyer(g.flyerFilter, params);
+  } else {
+    runner.apiAddMansion(params);
+  }
+}
+
+function onSaveSuccess(result) {
+  showLoading(false);
+  if (result && result.success) {
+    document.getElementById('popup-message').textContent = '保存しました';
+    document.getElementById('popup-message').style.color = 'green';
+    setTimeout(function() {
+      closePopup();
+      loadMansions();
+    }, 800);
+  } else {
+    document.getElementById('popup-message').textContent = 'エラー: ' + (result ? result.error : '不明');
+    document.getElementById('popup-message').style.color = 'red';
+  }
+}
+
+function onAddSuccess(result) {
+  showLoading(false);
+  if (result && result.success) {
+    document.getElementById('popup-message').textContent = '登録しました';
+    document.getElementById('popup-message').style.color = 'green';
+    setTimeout(function() {
+      closePopup();
+      loadMansions();
+    }, 800);
+  } else {
+    document.getElementById('popup-message').textContent = 'エラー: ' + (result ? result.error : '不明');
+    document.getElementById('popup-message').style.color = 'red';
+  }
+}
+
+function onSaveError(err) {
+  showLoading(false);
+  document.getElementById('popup-message').textContent = '通信エラー: ' + err.message;
+  document.getElementById('popup-message').style.color = 'red';
+}
+
+// ============================================================
+// ポップアップ制御
+// ============================================================
+function showPopup(show) {
+  var el = document.getElementById('popup-overlay');
+  if (show) el.classList.add('show');
+  else el.classList.remove('show');
+}
+
+function closePopup() {
+  showPopup(false);
+  g.newLatLng = null;
+}
+
+function onOverlayClick(event) {
+  if (event.target === document.getElementById('popup-overlay')) {
+    closePopup();
+  }
+}
+
+// ============================================================
+// Google Maps 初期化
+// ============================================================
+function initMap() {
+  g.map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 41.77, lng: 140.73 },
+    zoom: 13,
+    mapTypeId: 'roadmap',
+    gestureHandling: 'greedy'
+  });
+
+  initMapClickListener();
+  initMyLocation();
+  initApp();
+}
+
+// ============================================================
+// 現在地表示
+// ============================================================
+var g_locationMarker  = null;  // 現在地の青丸マーカー
+var g_locationCircle  = null;  // 精度円
+var g_watchId         = null;  // watchPosition ID
+
+function initMyLocation() {
+  if (!navigator.geolocation) return;
+
+  // 起動時に現在地取得を開始（バックグラウンドで追跡）
+  g_watchId = navigator.geolocation.watchPosition(
+    function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var acc = pos.coords.accuracy;
+      _updateLocationMarker(lat, lng, acc);
+    },
+    function(err) {
+      console.warn('位置情報取得失敗:', err.message);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+  );
+}
+
+function _updateLocationMarker(lat, lng, accuracy) {
+  var pos = { lat: lat, lng: lng };
+
+  if (!g_locationMarker) {
+    // 現在地マーカー（青い丸）
+    g_locationMarker = new google.maps.Marker({
+      position: pos,
+      map: g.map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 9,
+        fillColor: '#2196F3',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2.5
+      },
+      title: '現在地',
+      zIndex: 999
+    });
+    // 精度円
+    g_locationCircle = new google.maps.Circle({
+      map: g.map,
+      center: pos,
+      radius: accuracy,
+      fillColor: '#2196F3',
+      fillOpacity: 0.12,
+      strokeColor: '#2196F3',
+      strokeWeight: 1,
+      strokeOpacity: 0.4,
+      clickable: false
+    });
+  } else {
+    g_locationMarker.setPosition(pos);
+    g_locationCircle.setCenter(pos);
+    g_locationCircle.setRadius(accuracy);
+  }
+}
+
+function moveToMyLocation() {
+  if (!navigator.geolocation) {
+    alert('この端末は位置情報に対応していません');
+    return;
+  }
+  var btn = document.getElementById('btn-mylocation');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var acc = pos.coords.accuracy;
+      _updateLocationMarker(lat, lng, acc);
+      g.map.panTo({ lat: lat, lng: lng });
+      g.map.setZoom(16);
+      btn.textContent = '📍';
+      btn.disabled = false;
+    },
+    function(err) {
+      alert('現在地を取得できませんでした\n（位置情報の許可を確認してください）');
+      btn.textContent = '📍';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function showLoading(show) {
+  var el = document.getElementById('loading');
+  if (show) el.classList.add('show');
+  else el.classList.remove('show');
+}
+</script>
+
+<!-- Google Maps API -->
+<script>
+var MAPS_API_KEY_SET = '<?= mapsApiKey ?>' !== '';
+if (!MAPS_API_KEY_SET) {
+  window.initMap = function() {
+    document.getElementById('map').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;' +
+      'flex-direction:column;gap:12px;color:#888;background:#f9f9f9;">' +
+      '<div style="font-size:32px;">🗺️</div>' +
+      '<div style="font-size:14px;font-weight:bold;">Google Maps APIキー未設定</div>' +
+      '<div style="font-size:12px;">GASのスクリプトプロパティに MAPS_API_KEY を設定後、再デプロイしてください</div>' +
+      '</div>';
+    initApp();
+  };
+  document.write('<scr' + 'ipt>window.initMap();<\/scr' + 'ipt>');
+} else {
+  document.write('<scr' + 'ipt async defer src="https://maps.googleapis.com/maps/api/js' +
+    '?key=<?= mapsApiKey ?>&callback=initMap&language=ja"><\/scr' + 'ipt>');
+}
+</script>
+
+</body>
+</html>
