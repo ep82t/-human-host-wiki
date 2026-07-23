@@ -117,6 +117,15 @@ button:hover { background: #388e3c; }
   font-weight: bold; font-size: 10px; border-radius: 3px;
   padding: 1px 6px; margin-right: 6px;
 }
+/* 受信ログの「もっと見る／全期間」フッター */
+.log-more { padding: 10px 12px; text-align: center; }
+.log-more button {
+  margin: 0 4px; padding: 5px 12px; font-size: 12px;
+  border: 1px solid #90caf9; background: #e3f2fd; color: #1565c0;
+  border-radius: 4px; cursor: pointer;
+}
+.log-more button:hover { background: #bbdefb; }
+.log-more-end { color: #888; font-size: 11px; }
 
 /* 店舗タブ */
 #store-list { overflow-y: auto; flex: 1; }
@@ -629,7 +638,8 @@ var g = {
   infoWindow:      null,
   cityFilter:      '',
   flyerFilter:     '',
-  boundaryLoaded:  false
+  boundaryLoaded:  false,
+  logLimit:        50    // 受信ログの表示件数（「もっと見る」で増やす）
 };
 
 // 進捗率(0-100)→5段階オレンジ色（サイドバー用ドット）
@@ -721,7 +731,19 @@ function loadLogs() {
   var runner = google.script.run
     .withSuccessHandler(function(logs) { renderLogList(logs); })
     .withFailureHandler(function(err) { console.error('ログ取得失敗:', err.message); });
-  runner.apiGetDistLogsForFlyer(g.flyerFilter, g.cityFilter || null, 50);
+  runner.apiGetDistLogsForFlyer(g.flyerFilter, g.cityFilter || null, g.logLimit);
+}
+
+// 「もっと見る」：表示件数を増やして再読み込み
+function showMoreLogs() {
+  g.logLimit += 50;
+  loadLogs();
+}
+
+// 「全期間を表示」：上限を大きくして全件読み込み
+function showAllLogs() {
+  g.logLimit = 100000;
+  loadLogs();
 }
 
 // ============================================================
@@ -942,6 +964,7 @@ function onCityFilterChange() {
 
 function onFlyerFilterChange() {
   g.flyerFilter = document.getElementById('flyer-filter').value;
+  g.logLimit = 50; // チラシを切り替えたら表示件数をリセット
   // 全表示を即座リセットしてから新チラシデータを読み込む
   _resetAllDisplays();
   loadAreas();
@@ -1312,6 +1335,18 @@ function renderLogList(logs) {
         ' <span style="font-size:10px;color:#888;">（' + typeLabel + '）</span>' +
       '</div></div>';
   }
+
+  // 表示件数が上限に達している＝まだ古い記録がある可能性 → 続き表示ボタン
+  if (logs.length >= g.logLimit) {
+    html += '<div class="log-more">' +
+      '<button type="button" onclick="showMoreLogs()">もっと見る（+50件）</button>' +
+      '<button type="button" onclick="showAllLogs()">全期間を表示</button>' +
+      '</div>';
+  } else if (g.logLimit > 50) {
+    // 全件表示済み（これ以上ない）ことを明示
+    html += '<div class="log-more log-more-end">全 ' + logs.length + ' 件を表示中</div>';
+  }
+
   list.innerHTML = html;
 }
 
