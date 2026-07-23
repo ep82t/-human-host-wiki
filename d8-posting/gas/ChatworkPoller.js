@@ -196,9 +196,10 @@ function _processPendingEntries(token, roomId) {
 }
 
 /**
- * 新チラシSS作成をChatworkに通知する
+ * 新チラシSS作成を通知する（Chatwork + メール）
  */
 function _sendNewFlyerNotification(flyerName, url, token, roomId) {
+  // ── ① Chatworkへ通知（従来どおり）──
   var reportRoomId = PropertiesService.getScriptProperties()
     .getProperty('CHATWORK_REPORT_ROOM_ID') || roomId;
   var msg = [
@@ -211,15 +212,55 @@ function _sendNewFlyerNotification(flyerName, url, token, roomId) {
     '② チラシ選択ドロップダウンに自動追加されます',
     '[/info]'
   ].join('\n');
+  if (token && reportRoomId) {
+    try {
+      UrlFetchApp.fetch('https://api.chatwork.com/v2/rooms/' + reportRoomId + '/messages', {
+        method: 'post',
+        headers: { 'X-ChatWorkToken': token },
+        payload: { body: msg },
+        muteHttpExceptions: true
+      });
+    } catch(e) {
+      Logger.log('新チラシ通知送信失敗（Chatwork）: ' + e.message);
+    }
+  }
+
+  // ── ② メールで通知（新チラシは重要イベントなので個人宛に確実に届ける）──
+  _sendNewFlyerEmail(flyerName, url);
+}
+
+/**
+ * 新チラシ自動作成をメールで通知する
+ * 宛先: スクリプトプロパティ NOTIFY_EMAIL（カンマ区切り可）。未設定ならGAS所有者宛。
+ */
+function _sendNewFlyerEmail(flyerName, url) {
+  var recipient = '';
   try {
-    UrlFetchApp.fetch('https://api.chatwork.com/v2/rooms/' + reportRoomId + '/messages', {
-      method: 'post',
-      headers: { 'X-ChatWorkToken': token },
-      payload: { body: msg },
-      muteHttpExceptions: true
-    });
+    recipient = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.NOTIFY_EMAIL) || '';
+  } catch(e) {}
+  if (!recipient) {
+    try { recipient = Session.getEffectiveUser().getEmail() || ''; } catch(e) {}
+  }
+  if (!recipient) {
+    Logger.log('新チラシメール通知スキップ: 宛先未取得（NOTIFY_EMAILを設定してください）');
+    return;
+  }
+
+  var subject = '🆕 新チラシのマップを自動作成しました：' + flyerName;
+  var body =
+    'Chatworkの報告から新しいチラシを検出し、マップ用スプレッドシートを自動作成しました。\n\n' +
+    'チラシ名：' + flyerName + '\n' +
+    'スプレッドシート：' + (url || '（URL取得失敗）') + '\n\n' +
+    '次のステップ：\n' +
+    '① 管理マップの設定（⚙️）から目標枚数を設定してください\n' +
+    '② チラシ選択ドロップダウンに自動追加されています\n\n' +
+    '― D8-Posting 自動通知';
+
+  try {
+    MailApp.sendEmail(recipient, subject, body);
+    Logger.log('新チラシメール通知送信: ' + recipient);
   } catch(e) {
-    Logger.log('新チラシ通知送信失敗: ' + e.message);
+    Logger.log('新チラシメール通知送信失敗: ' + e.message);
   }
 }
 

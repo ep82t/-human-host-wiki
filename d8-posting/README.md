@@ -29,8 +29,18 @@ Chatworkに未知のチラシ名で報告が投稿されると:
    （エリアマスタから全町丁目をコピーしてステータス未着手で初期化）
 3. `FLYER_TYPES` に自動追加 → 管理マップのドロップダウンに出現（＝マップ反映）
 4. 作成したスプレッドシートに配布実績を記録（エリア更新＋配布記録追記）
-5. Chatworkに「🆕 新チラシのマップを自動作成しました」と通知
+5. **通知（2系統）**: Chatworkに「🆕 新チラシのマップを自動作成しました」と投稿 ＋ **メールで個人宛に通知**
 6. SS作成に失敗した場合はキュー（`PENDING_POSTING_ENTRIES`）に保存し、次回ポーリングで再処理
+
+### 新チラシのメール通知
+
+新チラシSSを自動作成したとき、Chatwork投稿に加えて**メールでも通知**する（`_sendNewFlyerEmail`）。
+Chatworkのルーム投稿は他メッセージに埋もれやすいため、重要イベントである新チラシ検出は個人メールにも届ける設計。
+
+- 宛先: スクリプトプロパティ `NOTIFY_EMAIL`（カンマ区切りで複数可）。**未設定ならGAS所有者のGmail宛**に自動送信
+- 設定: GASエディタで `setNotifyEmail('you@example.com')` を実行
+- テスト送信: GASエディタで `testNewFlyerEmail()` を実行
+- メール送信には `script.send_mail` スコープが必要（`appsscript.json` に追加済み。再認可が必要）
 
 この処理はWebhook（リアルタイム）とポーラー（毎時）の両方に実装されており、
 Webhookで記録済みのメッセージIDは `CHATWORK_WEBHOOK_PROCESSED_IDS` に保存してポーラーが二重記録しないようにしている。
@@ -47,6 +57,7 @@ Webhookで記録済みのメッセージIDは `CHATWORK_WEBHOOK_PROCESSED_IDS` �
 | `MAPS_API_KEY` | Google Maps APIキー（ジオコーディング・地図表示） |
 | `FLYER_TYPES` | チラシ名のカンマ区切りリスト（自動追加される） |
 | `FLYER_SS_MAP` | チラシ名→SS IDのJSONマップ（自動追加される） |
+| `NOTIFY_EMAIL` | （任意）新チラシ自動作成のメール通知先。未設定ならGAS所有者宛 |
 | `APP_ACCESS_KEY` | （任意）WebアプリURLの合言葉。`setupSecurity()` で生成 |
 | `CHATWORK_WEBHOOK_TOKEN` | （任意）Webhook検証トークン。`setupSecurity()` で生成 |
 

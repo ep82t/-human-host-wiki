@@ -103,6 +103,7 @@ var PROP_KEYS = {
   CHATWORK_ROOM_ID: 'CHATWORK_ROOM_ID',
   FLYER_TYPES:      'FLYER_TYPES',      // チラシ選択ドロップダウン用（カンマ区切り）
   FLYER_SS_MAP:     'FLYER_SS_MAP',     // チラシ名→SS ID マッピング（JSON）
+  NOTIFY_EMAIL:     'NOTIFY_EMAIL',     // 新チラシ自動作成のメール通知先（未設定ならGAS所有者宛）
   // ── セキュリティ関連（未設定の間は従来どおり動作 = チェック無効）──
   APP_ACCESS_KEY:         'APP_ACCESS_KEY',         // WebアプリURLの合言葉（?key=xxx）
   CHATWORK_WEBHOOK_TOKEN: 'CHATWORK_WEBHOOK_TOKEN'  // Webhook署名検証用トークン
@@ -163,6 +164,34 @@ function disableSecurity() {
   props.deleteProperty(PROP_KEYS.APP_ACCESS_KEY);
   props.deleteProperty(PROP_KEYS.CHATWORK_WEBHOOK_TOKEN);
   Logger.log('✅ セキュリティチェックを無効化しました（誰でもアクセス可能な状態に戻りました）');
+}
+
+// ------------------------------------------------------------
+// 通知メール設定ユーティリティ
+// ------------------------------------------------------------
+
+/**
+ * 【メール通知先を設定】新チラシ自動作成時のメール宛先を登録する
+ * GASエディタから実行: setNotifyEmail('kyoep82t@gmail.com')
+ * 複数宛先はカンマ区切り: setNotifyEmail('a@x.com,b@y.com')
+ * 未設定のままでもGAS所有者（あなた）のGmail宛に自動送信されます。
+ * @param {string} email 通知先メールアドレス
+ */
+function setNotifyEmail(email) {
+  if (!email) { Logger.log('❌ メールアドレスを指定してください'); return; }
+  PropertiesService.getScriptProperties().setProperty(PROP_KEYS.NOTIFY_EMAIL, String(email).trim());
+  Logger.log('✅ 新チラシ通知メールの宛先を設定しました: ' + email);
+}
+
+/**
+ * 【メール通知のテスト送信】設定した宛先にテストメールを送る
+ * GASエディタから実行: testNewFlyerEmail()
+ */
+function testNewFlyerEmail() {
+  _sendNewFlyerEmail('テストチラシ（送信確認）', 'https://docs.google.com/spreadsheets/');
+  var to = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.NOTIFY_EMAIL);
+  if (!to) { try { to = Session.getEffectiveUser().getEmail(); } catch(e) { to = '（取得失敗）'; } }
+  Logger.log('テストメールを送信しました → ' + to + '（受信ボックスを確認してください）');
 }
 
 /**
