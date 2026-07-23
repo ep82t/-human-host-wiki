@@ -8,7 +8,8 @@ var SHEET_NAMES = {
   MANSION:          'マンション台帳',
   MEMBER:           'メンバーマスタ',
   EXECUTOR:         '実行者',
-  STORE:            '店舗設置'
+  STORE:            '店舗設置',
+  AREA_HINT:        '地名マスタ'   // 地名→市町村の推定表（Claudeプロンプトに注入）
 };
 
 // 店舗設置列インデックス

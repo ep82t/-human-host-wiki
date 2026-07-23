@@ -57,7 +57,26 @@ Webhookで記録済みのメッセージIDは `CHATWORK_WEBHOOK_PROCESSED_IDS` �
 | `MAPS_API_KEY` | Google Maps APIキー（ジオコーディング・地図表示） |
 | `FLYER_TYPES` | チラシ名のカンマ区切りリスト（自動追加される） |
 | `FLYER_SS_MAP` | チラシ名→SS IDのJSONマップ（自動追加される） |
-| `NOTIFY_EMAIL` | （任意）新チラシ自動作成のメール通知先。未設定ならGAS所有者宛 |
+| `NOTIFY_EMAIL` | （任意）新チラシ自動作成・記録失敗のメール通知先。未設定ならGAS所有者宛 |
+
+## メール通知（報告ルーム不要）
+
+Chatworkの報告ルームを運用していなくても、重要イベントはメールで届く。
+
+- **新チラシ自動作成**: `_sendNewFlyerEmail`
+- **記録失敗**: 解析エラーやチラシ名不明などで記録できなかった投稿を `_sendFailureEmail` でメール通知
+  - 総失敗（記録0件）の投稿は毎時ポーラーが通知、一部だけ失敗した投稿はWebhookが通知（二重通知を防ぐ役割分担）
+- 宛先は `NOTIFY_EMAIL`（未設定ならGAS所有者のGmail）
+
+## 地名マスタ（地名→市町村の推定表）
+
+投稿に市町村名が書かれていなくても、地名から市町村を推定するためのリスト。
+以前はコード（`ClaudeAPI.js`）にハードコードしていたが、**スプレッドシートで管理**できる。
+
+- 初期化: GASエディタで `setupAreaMasterSheet()` を実行 → 「地名マスタ」シートが作られ既定の地名が入る
+- 追加: 「地名マスタ」シートに `市町村名 | 地名（読点「、」区切り）` の行を足す/編集するだけ
+- 反映はキャッシュの都合で最大1時間。すぐ反映したいときは `clearAreaHintCache()` を実行
+- シートが無い/空でも、コード内の `DEFAULT_AREA_HINTS` にフォールバックするので従来どおり動く
 | `APP_ACCESS_KEY` | （任意）WebアプリURLの合言葉。`setupSecurity()` で生成 |
 | `CHATWORK_WEBHOOK_TOKEN` | （任意）Webhook検証トークン。`setupSecurity()` で生成 |
 
