@@ -106,6 +106,18 @@ button:hover { background: #388e3c; }
 .log-datetime { color: #888; margin-bottom: 2px; }
 .log-body { color: #333; }
 
+/* 新チラシ自動作成の受信ログ行（赤・太字で強調） */
+.log-item.log-new-flyer {
+  background: #fff4f4;
+  border-left: 4px solid #d32f2f;
+}
+.log-new-flyer .log-body { color: #d32f2f; font-weight: bold; }
+.log-new-flyer-badge {
+  display: inline-block; color: #fff; background: #d32f2f;
+  font-weight: bold; font-size: 10px; border-radius: 3px;
+  padding: 1px 6px; margin-right: 6px;
+}
+
 /* 店舗タブ */
 #store-list { overflow-y: auto; flex: 1; }
 .store-item {
@@ -1289,9 +1301,12 @@ function renderLogList(logs) {
     var l = logs[i];
     var icon = distTypeIcon[l.distType] || '📋';
     var typeLabel = l.distType ? esc(l.distType) : 'ポスティング';
-    html += '<div class="log-item">' +
+    // source に「新チラシ」印があれば赤太字で強調表示
+    var isNewFlyer = l.source && String(l.source).indexOf('新チラシ') !== -1;
+    var badge = isNewFlyer ? '<span class="log-new-flyer-badge">🆕 新チラシ追加</span>' : '';
+    html += '<div class="log-item' + (isNewFlyer ? ' log-new-flyer' : '') + '">' +
       '<div class="log-datetime">' + esc(l.datetime) + ' [' + esc(l.source) + ']</div>' +
-      '<div class="log-body">' +
+      '<div class="log-body">' + badge +
         icon + ' ' + esc(l.city) + ' ' + esc(l.address) + ' / ' +
         esc(l.flyerType) + ' / ' + (l.distCount || 0) + '枚 / ' + esc(l.memberName) +
         ' <span style="font-size:10px;color:#888;">（' + typeLabel + '）</span>' +

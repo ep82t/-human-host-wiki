@@ -306,6 +306,8 @@ function _autoCreateFlyerAndRecord(flyerName, parsed, distDate, senderName, toke
     accumulate: true
   });
   if (flyerUpdateResult.success) {
+    // SSを新規作成したこの1件だけ受信ログで赤太字表示するため source に印を付ける
+    // （既存SSに追記しただけの場合は通常の 'Chatwork自動'）
     appendDistLogToFlyerSs(flyerName, {
       city:       parsed.city,
       address:    parsed.town + (parsed.chome || ''),
@@ -313,7 +315,7 @@ function _autoCreateFlyerAndRecord(flyerName, parsed, distDate, senderName, toke
       distCount:  parsed.distCount || 0,
       memberName: parsed.memberName || senderName,
       distType:   '町丁目',
-      source:     'Chatwork自動'
+      source:     (createResult.success ? 'Chatwork自動【新チラシ】' : 'Chatwork自動')
     });
     return true;
   } else {
