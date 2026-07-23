@@ -234,13 +234,7 @@ function _sendNewFlyerNotification(flyerName, url, token, roomId) {
  * 宛先: スクリプトプロパティ NOTIFY_EMAIL（カンマ区切り可）。未設定ならGAS所有者宛。
  */
 function _sendNewFlyerEmail(flyerName, url) {
-  var recipient = '';
-  try {
-    recipient = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.NOTIFY_EMAIL) || '';
-  } catch(e) {}
-  if (!recipient) {
-    try { recipient = Session.getEffectiveUser().getEmail() || ''; } catch(e) {}
-  }
+  var recipient = _getNotifyRecipient();
   if (!recipient) {
     Logger.log('新チラシメール通知スキップ: 宛先未取得（NOTIFY_EMAILを設定してください）');
     return;
@@ -261,6 +255,49 @@ function _sendNewFlyerEmail(flyerName, url) {
     Logger.log('新チラシメール通知送信: ' + recipient);
   } catch(e) {
     Logger.log('新チラシメール通知送信失敗: ' + e.message);
+  }
+}
+
+/**
+ * 通知メールの宛先を返す（NOTIFY_EMAIL → GAS所有者の順）
+ */
+function _getNotifyRecipient() {
+  var recipient = '';
+  try {
+    recipient = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.NOTIFY_EMAIL) || '';
+  } catch(e) {}
+  if (!recipient) {
+    try { recipient = Session.getEffectiveUser().getEmail() || ''; } catch(e) {}
+  }
+  return recipient;
+}
+
+/**
+ * 記録に失敗した投稿をメールで通知する
+ * 報告ルームを持たない運用でも、取りこぼしに気づけるようにする。
+ * @param {number} failedCount 失敗件数
+ * @param {Array<string>} failedLines 失敗内容の行
+ */
+function _sendFailureEmail(failedCount, failedLines) {
+  var recipient = _getNotifyRecipient();
+  if (!recipient) {
+    Logger.log('失敗メール通知スキップ: 宛先未取得（NOTIFY_EMAILを設定してください）');
+    return;
+  }
+
+  var when = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'M/d HH:mm');
+  var subject = '⚠️ ポスティング自動記録：' + failedCount + '件が記録できませんでした（' + when + '）';
+  var body =
+    'Chatworkの報告のうち ' + failedCount + '件を自動記録できませんでした。\n' +
+    '内容を確認し、必要なら正しいフォーマットで再投稿するか、管理マップから手入力してください。\n\n' +
+    (failedLines && failedLines.length ? failedLines.join('\n\n') : '（詳細はGASの実行ログを確認してください）') +
+    '\n\n― D8-Posting 自動通知';
+
+  try {
+    MailApp.sendEmail(recipient, subject, body);
+    Logger.log('失敗メール通知送信: ' + recipient + ' / ' + failedCount + '件');
+  } catch(e) {
+    Logger.log('失敗メール通知送信失敗: ' + e.message);
   }
 }
 
@@ -419,6 +456,7 @@ function pollChatworkMessages() {
   var processed = 0;
   var failedCount = 0;
   var reportLines = []; // Chatwork報告用
+  var failedLines = []; // 失敗内容（メール通知用）
 
   newMessages.forEach(function(msg) {
     var msgId = parseInt(msg.message_id, 10);
@@ -438,6 +476,7 @@ function pollChatworkMessages() {
         });
       } else if (storeResult.reason !== 'duplicate') {
         failedCount++;
+        failedLines.push('🏪 店舗設置の記録に失敗: ' + (storeResult.error || '原因不明') + '\n    投稿: ' + body);
         Logger.log('店舗設置登録失敗: ' + (storeResult.error || ''));
       }
       // 同じメッセージに #ポスティング も含む場合は続けて処理
@@ -457,12 +496,14 @@ function pollChatworkMessages() {
     if (parsedList.error) {
       Logger.log('解析エラー [ID=' + msg.message_id + ']: ' + parsedList.error);
       failedCount++;
+      failedLines.push('🔴 解析エラー: ' + parsedList.error + '\n    投稿: ' + body);
       return;
     }
 
     if (!Array.isArray(parsedList) || parsedList.length === 0) {
       Logger.log('市町村/町名が読み取れず [ID=' + msg.message_id + ']');
       failedCount++;
+      failedLines.push('🔴 市町村・町名が読み取れませんでした\n    投稿: ' + body);
       return;
     }
 
@@ -481,6 +522,8 @@ function pollChatworkMessages() {
       if (!parsed.flyerType) {
         Logger.log('  ⚠️ チラシ種別なし → スキップ（マスターには書き込みません）');
         failedCount++;
+        failedLines.push('🟡 チラシ名が読み取れず記録できませんでした: ' +
+          parsed.city + ' ' + parsed.town + (parsed.chome || '') + '\n    投稿: ' + body);
         return;
       }
 
@@ -499,6 +542,8 @@ function pollChatworkMessages() {
           Logger.log('✅ 新チラシ自動作成＆記録: ' + autoLine);
         } else {
           failedCount++;
+          failedLines.push('🟡 新チラシSSの作成に失敗（キューに保存し次回再試行）: ' +
+            normalizedFlyerName + ' / ' + parsed.city + ' ' + parsed.town + (parsed.chome || ''));
         }
         return;
       }
@@ -534,6 +579,8 @@ function pollChatworkMessages() {
       } else {
         Logger.log('⚠️ チラシSS更新失敗: ' + (flyerUpdateResult.error || ''));
         failedCount++;
+        failedLines.push('🟡 チラシSSへの記録に失敗: ' + (flyerUpdateResult.error || '原因不明') +
+          '\n    ' + normalizedFlyerName + ' / ' + parsed.city + ' ' + parsed.town + (parsed.chome || ''));
       }
     });
   });
@@ -543,9 +590,14 @@ function pollChatworkMessages() {
   _pruneWebhookProcessedIds(maxId);
   Logger.log('ポーリング完了: ' + processed + '件記録 / 最終ID: ' + maxId);
 
-  // Chatworkに結果を報告
+  // Chatworkに結果を報告（報告ルーム運用時のみ実質有効）
   if (processed > 0 || failedCount > 0) {
     _sendChatworkReport(processed, failedCount, reportLines, token, roomId);
+  }
+
+  // 失敗があればメールで通知（報告ルームが無くても気づけるように）
+  if (failedCount > 0) {
+    _sendFailureEmail(failedCount, failedLines);
   }
 }
 

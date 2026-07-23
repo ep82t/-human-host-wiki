@@ -91,9 +91,14 @@ function handleChatworkWebhook(e) {
     var recorded = 0;
     var failed = 0;
     var lines = [];
+    var failedLines = [];
 
     parsedList.forEach(function(parsed) {
-      if (!parsed || !parsed.city || !parsed.town) { failed++; return; }
+      if (!parsed || !parsed.city || !parsed.town) {
+        failed++;
+        failedLines.push('🔴 市町村・町名が読み取れませんでした');
+        return;
+      }
 
       // 実施者名が空の場合はChatworkの送信者名を使用
       if (!parsed.memberName && senderName) {
@@ -104,6 +109,8 @@ function handleChatworkWebhook(e) {
       if (!parsed.flyerType) {
         Logger.log('  ⚠️ チラシ種別なし → スキップ');
         failed++;
+        failedLines.push('🟡 チラシ名が読み取れず記録できませんでした: ' +
+          parsed.city + ' ' + parsed.town + (parsed.chome || ''));
         return;
       }
 
@@ -119,6 +126,8 @@ function handleChatworkWebhook(e) {
             ' +' + parsed.distCount + '枚（' + parsed.memberName + '）[新チラシ自動作成]');
         } else {
           failed++; // 作成失敗分はキューに保存済み → ポーラーが再処理する
+          failedLines.push('🟡 新チラシSSの作成に失敗（次回ポーリングで再試行）: ' +
+            flyerName + ' / ' + parsed.city + ' ' + parsed.town + (parsed.chome || ''));
         }
         return;
       }
@@ -152,12 +161,21 @@ function handleChatworkWebhook(e) {
       } else {
         Logger.log('⚠️ チラシSS更新失敗: ' + (flyerUpdateResult.error || ''));
         failed++;
+        failedLines.push('🟡 チラシSSへの記録に失敗: ' + (flyerUpdateResult.error || '原因不明') +
+          '\n    ' + flyerName + ' / ' + parsed.city + ' ' + parsed.town + (parsed.chome || ''));
       }
     });
 
     // 記録できたメッセージはポーラーが二重処理しないようIDを保存
     if (recorded > 0 && messageId) {
       _markWebhookProcessed(messageId);
+    }
+
+    // 一部だけ失敗したメッセージ（残りは記録済み＝ポーラーがスキップする）は
+    // ここでメール通知する。総失敗（記録0件）はポーラーが拾って通知するので
+    // Webhookでは送らない（二重通知の防止）。
+    if (recorded > 0 && failed > 0) {
+      _sendFailureEmail(failed, failedLines);
     }
 
     result.success = (failed === 0);
@@ -331,22 +349,29 @@ function _detectDistType(body) {
 }
 
 /**
- * エラーが発生した場合に Chatwork へ通知する
+ * エラーが発生した場合に Chatwork へ通知する（報告ルーム運用時のみ）
+ *
+ * ※ メール通知はここでは行わない。総失敗（記録0件）のメッセージは
+ *   _markWebhookProcessed されないため、毎時ポーラーが拾って
+ *   _sendFailureEmail でメール通知する（Webhookとポーラーで二重に
+ *   メールが飛ぶのを防ぐための役割分担）。
+ *   Webhookが担当するのは「一部だけ失敗した（残りは記録済みでポーラーが
+ *   スキップする）」ケースのメール通知で、それは handleChatworkWebhook 側で行う。
  */
 function _notifyChatworkError(errorMessage, payload) {
+  var senderName = '';
+  try {
+    senderName = payload.webhook_event.account.name || '';
+  } catch (e) { /* 無視 */ }
+
   var token, roomId;
   try {
     token  = getProp(PROP_KEYS.CHATWORK_TOKEN);
     roomId = getProp(PROP_KEYS.CHATWORK_ROOM_ID);
   } catch (e) {
-    Logger.log('Chatwork通知スキップ（設定なし）: ' + errorMessage);
+    Logger.log('Chatwork通知スキップ（報告ルーム未設定）: ' + errorMessage);
     return;
   }
-
-  var senderName = '';
-  try {
-    senderName = payload.webhook_event.account.name || '';
-  } catch (e) { /* 無視 */ }
 
   var msg = '[info][title]ポスティング報告の自動記録に失敗しました[/title]' +
     (senderName ? '投稿者: ' + senderName + '\n' : '') +
@@ -354,17 +379,15 @@ function _notifyChatworkError(errorMessage, payload) {
     '\n\n正しいフォーマットで再投稿してください：\n' +
     '#ポスティング\n函館市 西旭岡町2丁目\n419チラシ\n200枚配布\n氏名[/info]';
 
-  var options = {
-    method: 'post',
-    headers: { 'X-ChatWorkToken': token },
-    payload: 'body=' + encodeURIComponent(msg),
-    muteHttpExceptions: true
-  };
-
   try {
     UrlFetchApp.fetch(
       'https://api.chatwork.com/v2/rooms/' + roomId + '/messages',
-      options
+      {
+        method: 'post',
+        headers: { 'X-ChatWorkToken': token },
+        payload: 'body=' + encodeURIComponent(msg),
+        muteHttpExceptions: true
+      }
     );
   } catch (e) {
     Logger.log('Chatwork通知の送信に失敗: ' + e.message);
