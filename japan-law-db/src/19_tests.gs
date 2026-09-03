@@ -57,6 +57,7 @@ function runAllTests() {
   test_廃止法令のステータス記録();
   test_本文がJSON形式で返る場合();
   test_XMLとJSONで同じ結果になること();
+  test_部分一致で本命法令が埋もれる場合();
 
   return summarizeTests_();
 }
@@ -1406,5 +1407,85 @@ function test_XMLとJSONで同じ結果になること() {
       buildStructuredJsonFromTree(fromXml, meta).unit_count,
       buildStructuredJsonFromTree(fromJson, meta).unit_count,
       '構造化JSONの条文単位数が一致する');
+  });
+}
+
+/**
+ * 部分一致検索で似た名前の法令が大量にヒットしても、
+ * 本命の法令を正しく特定できること。
+ *
+ * これは実際のe-Govで起きた事象を再現したもの。
+ * 「所得税法」で検索すると、次のような法令が先に返ってくる。
+ *   - 日本国とアメリカ合衆国との間の...所得税法等の臨時特例に関する法律
+ *   - 所得税法等の一部を改正する法律（年度ごとに多数存在）
+ */
+function test_部分一致で本命法令が埋もれる場合() {
+  runTest_('部分一致で本命法令が埋もれる場合', function () {
+    withTestContext_(function (ctx) {
+      // 1ページ目は紛らわしい法令だけ、2ページ目に本命が現れる状況を作る
+      var decoys = [];
+      for (var i = 0; i < 100; i++) {
+        decoys.push({
+          law_info: {
+            law_id: 'DECOY' + i, law_num: '令和' + i + '年法律第1号', law_type: 'Act'
+          },
+          revision_info: { law_title: '所得税法等の一部を改正する法律' }
+        });
+      }
+      decoys[0].revision_info.law_title =
+        '日本国とアメリカ合衆国との間の相互協力及び安全保障条約第六条に基づく' +
+        '施設及び区域並びに日本国における合衆国軍隊の地位に関する協定の実施に伴う' +
+        '所得税法等の臨時特例に関する法律';
+
+      var realLaw = {
+        law_info: {
+          law_id: '340AC0000000033',
+          law_num: '昭和四十年法律第三十三号',
+          law_type: 'Act'
+        },
+        revision_info: { law_title: '所得税法' }
+      };
+
+      setHttpOverrideForTest(function (url) {
+        if (url.indexOf('/laws?') !== -1 && url.indexOf('updated_from') !== -1) {
+          return okJson_(url, { laws: [] });
+        }
+        if (url.indexOf('/laws?') !== -1) {
+          // offset に応じてページを返す（2ページ目に本命がいる）
+          var offsetMatch = url.match(/offset=(\d+)/);
+          var offset = offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
+          if (offset === 0) {
+            return okJson_(url, { laws: decoys });
+          }
+          return okJson_(url, { laws: [realLaw] });
+        }
+        if (url.indexOf('/law_data/340AC0000000033') !== -1) {
+          return {
+            ok: true, status: 200, url: url, attempts: 1, error: null,
+            body: getTestLawXml_('所得税法', '昭和四十年法律第三十三号')
+          };
+        }
+        return errorResult_(url, 404, '対象外のURL');
+      });
+
+      var summary = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+
+      assertEquals_(1, summary.updated_count,
+        '紛らわしい候補が100件あっても本命を取得できる');
+      assertEquals_(0, summary.skipped_count, 'スキップされない');
+
+      var state = loadSyncState(ctx.driveService);
+      var record = state.laws['340AC0000000033'];
+      assertTrue_(!!record, '本命の法令IDで保存されている');
+      assertEquals_('所得税法', record.law_name, '正しい法令名で保存されている');
+
+      // 紛らわしい法令が保存されていないこと
+      assertTrue_(!state.laws['DECOY0'], '紛らわしい法令は保存されていない');
+
+      var mdFolder = ctx.driveService.getMarkdownFolder('tax', 'act');
+      assertEquals_(1, countFiles_(mdFolder), '保存されたのは1件だけである');
+      assertTrue_(!!ctx.driveService.readTextFile(mdFolder, '所得税法.md'),
+        '所得税法.md が保存されている');
+    });
   });
 }

@@ -58,52 +58,141 @@ function apiGet_(url, logger, parseJson) {
 /**
  * 法令名で法令を検索する。
  *
- * 検索手段は環境により異なり得るため、複数の方法を順に試す。
- *   1. /laws に法令名を指定して絞り込む
- *   2. 1で0件なら /keyword で検索する
+ * 重要な注意点
+ * ------------
+ * e-Gov の law_title は **部分一致** で検索される。
+ * 例えば「所得税法」で検索すると、次のようなものも大量にヒットする。
+ *
+ *   - 所得税法（本命）
+ *   - 所得税法等の一部を改正する法律（年度ごとに多数存在する）
+ *   - ...所得税法等の臨時特例に関する法律
+ *
+ * そのため1ページ目だけを見ていると、本命の法令が埋もれて
+ * 「見つからない」と誤判定する恐れがある。
+ * 本関数は **完全一致する法令が見つかるまでページを送る**。
  *
  * @param {string} lawName 法令名
  * @param {!Logger_} logger ロガー
- * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string}}
+ * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string,
+ *           pages: number, exactFound: boolean}}
  */
 function searchLawsByName(lawName, logger) {
-  var queryParams = {};
-  queryParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = lawName;
-  queryParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
-  queryParams[EGOV_API_SPEC.PARAMS.LIMIT] = 100;
+  var collected = [];
+  var seenIds = {};
+  var pages = 0;
+  var lastUrl = '';
+  var target = normalizeLawName(lawName);
+  var exactFound = false;
 
-  var url = buildEgovUrl('LAWS', {}, queryParams);
-  var result = apiGet_(url, logger, true);
-
-  if (result.ok) {
-    var list = pickLawList(result.data);
-    if (list.length > 0) {
-      return { ok: true, candidates: list, error: null, url: url };
+  for (var page = 0; page < CONFIG.HTTP.MAX_SEARCH_PAGES; page++) {
+    var queryParams = {};
+    queryParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = lawName;
+    queryParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
+    if (page > 0) {
+      queryParams[EGOV_API_SPEC.PARAMS.OFFSET] = page * CONFIG.HTTP.SEARCH_PAGE_SIZE;
     }
-    logger.info('法令一覧APIで0件のため、キーワード検索を試みます', { law_name: lawName });
-  } else {
-    logger.warn('法令一覧APIの呼び出しに失敗しました。キーワード検索へ切り替えます', {
-      law_name: lawName, error: result.error, status: result.status
+
+    var url = buildEgovUrl('LAWS', {}, queryParams);
+    lastUrl = url;
+    var result = apiGet_(url, logger, true);
+
+    if (!result.ok) {
+      if (page === 0) {
+        logger.warn('法令一覧APIの呼び出しに失敗しました。キーワード検索へ切り替えます', {
+          law_name: lawName, error: result.error, status: result.status
+        });
+        return searchLawsByKeyword_(lawName, logger);
+      }
+      break;  // 2ページ目以降の失敗は、取得済みの分で判断する
+    }
+
+    var list = pickLawList(result.data);
+    if (list.length === 0) {
+      break;
+    }
+
+    // 同じ結果が返ってきた場合、offset が効いていないためページ送りを止める
+    var newCount = 0;
+    list.forEach(function (item) {
+      var info = readLawInfo(item);
+      var key = info.law_id || info.law_num || JSON.stringify(item);
+      if (seenIds[key]) {
+        return;
+      }
+      seenIds[key] = true;
+      newCount++;
+      collected.push(item);
+      if (normalizeLawName(info.law_title) === target) {
+        exactFound = true;
+      }
     });
+
+    pages++;
+
+    if (newCount === 0) {
+      // offset が無視されている（同じページが返ってきた）
+      break;
+    }
+    if (exactFound) {
+      break;  // 本命が見つかったので、これ以上ページを送らない
+    }
+    if (list.length < CONFIG.HTTP.SEARCH_PAGE_SIZE) {
+      break;  // 最終ページ
+    }
   }
 
-  // フォールバック: キーワード検索
+  if (collected.length === 0) {
+    logger.info('法令一覧APIで0件のため、キーワード検索を試みます', { law_name: lawName });
+    return searchLawsByKeyword_(lawName, logger);
+  }
+
+  if (!exactFound) {
+    logger.warn(
+      '完全一致する法令名が見つかりませんでした（部分一致の候補のみ）', {
+        law_name: lawName, candidates: collected.length, pages: pages
+      });
+  }
+
+  return {
+    ok: true, candidates: collected, error: null, url: lastUrl,
+    pages: pages, exactFound: exactFound
+  };
+}
+
+/**
+ * キーワード検索で法令を探す（法令一覧APIが使えない場合のフォールバック）。
+ *
+ * @param {string} lawName 法令名
+ * @param {!Logger_} logger ロガー
+ * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string,
+ *           pages: number, exactFound: boolean}}
+ * @private
+ */
+function searchLawsByKeyword_(lawName, logger) {
   var kwParams = {};
   kwParams[EGOV_API_SPEC.PARAMS.KEYWORD] = lawName;
-  kwParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
-  kwParams[EGOV_API_SPEC.PARAMS.LIMIT] = 100;
+  kwParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
 
   var kwUrl = buildEgovUrl('KEYWORD', {}, kwParams);
   var kwResult = apiGet_(kwUrl, logger, true);
 
   if (!kwResult.ok) {
     return {
-      ok: false, candidates: [], url: kwUrl,
+      ok: false, candidates: [], url: kwUrl, pages: 0, exactFound: false,
       error: kwResult.error || 'キーワード検索に失敗しました'
     };
   }
 
-  return { ok: true, candidates: pickLawList(kwResult.data), error: null, url: kwUrl };
+  var candidates = pickLawList(kwResult.data);
+  var target = normalizeLawName(lawName);
+  var exactFound = candidates.some(function (item) {
+    return normalizeLawName(readLawInfo(item).law_title) === target;
+  });
+
+  return {
+    ok: true, candidates: candidates, error: null, url: kwUrl,
+    pages: 1, exactFound: exactFound
+  };
 }
 
 /**
@@ -460,7 +549,8 @@ function probeApiSpec(lawName) {
   // --- 1. 法令一覧APIで検索できるか ---
   var searchParams = {};
   searchParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = target;
-  searchParams[EGOV_API_SPEC.PARAMS.LIMIT] = 3;
+  // 部分一致のため候補が多い。本命が埋もれないよう多めに取得する
+  searchParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
   var searchUrl = buildEgovUrl('LAWS', {}, searchParams);
 
   console.log('[1] 法令検索');
@@ -487,8 +577,35 @@ function probeApiSpec(lawName) {
     return { ok: false, steps: steps, lawId: '', contentFormat: '' };
   }
 
-  var info = readLawInfo(candidates[0]);
+  // law_title は部分一致で検索されるため、1件目が目的の法令とは限らない。
+  // 実際の同期処理と同じく「法令名が完全一致するもの」を選ぶ。
+  var normalizedTarget = normalizeLawName(target);
+  var exact = null;
+  candidates.forEach(function (item) {
+    if (exact) {
+      return;
+    }
+    var candidateInfo = readLawInfo(item);
+    if (normalizeLawName(candidateInfo.law_title) === normalizedTarget) {
+      exact = candidateInfo;
+    }
+  });
+
+  if (!exact) {
+    console.log('    ⚠ 「' + target + '」と完全一致する法令が見つかりませんでした。');
+    console.log('      e-Govの検索は部分一致のため、名前に「' + target + '」を含む');
+    console.log('      別の法令だけがヒットしています。候補の例:');
+    candidates.slice(0, 3).forEach(function (item) {
+      console.log('        - ' + readLawInfo(item).law_title);
+    });
+    steps.push({ step: 'search', ok: false, detail: '完全一致なし' });
+    printProbeVerdict_(steps);
+    return { ok: false, steps: steps, lawId: '', contentFormat: '' };
+  }
+
+  var info = exact;
   lawId = info.law_id;
+  console.log('    （部分一致の候補から、名前が完全一致するものを選びました）');
   console.log('    法令名  : ' + (info.law_title || '(読み取れず)'));
   console.log('    法令番号: ' + (info.law_num || '(読み取れず)'));
   console.log('    法令ID  : ' + (info.law_id || '(読み取れず)'));
@@ -607,9 +724,11 @@ function printProbeVerdict_(steps) {
     console.log('   法令の検索・本文の取得ともに成功しました。');
     setProp(CONFIG.PROPERTY_KEYS.API_SPEC_VERIFIED_AT, nowIso());
   } else if (!searchOk) {
-    console.log('❌ 法令の検索に失敗しました。');
-    console.log('   02_api_spec.gs の ENDPOINTS.LAWS と PARAMS.LAW_TITLE を');
-    console.log('   確認してください。');
+    console.log('❌ 法令を特定できませんでした。');
+    console.log('   通信自体は成功している場合、法令名がe-Govの正式名称と');
+    console.log('   異なっている可能性があります。');
+    console.log('   通信から失敗している場合は、02_api_spec.gs の');
+    console.log('   ENDPOINTS.LAWS と PARAMS.LAW_TITLE を確認してください。');
   } else {
     console.log('❌ 法令は検索できましたが、本文を取得できませんでした。');
     console.log('   02_api_spec.gs の ENDPOINTS.LAW_DATA と');

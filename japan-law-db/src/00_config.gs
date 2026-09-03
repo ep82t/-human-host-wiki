@@ -26,7 +26,18 @@ var CONFIG = {
     /** リトライ対象のHTTPステータス */
     RETRYABLE_STATUS: [408, 425, 429, 500, 502, 503, 504],
     /** User-Agent 相当の識別文字列（問い合わせ先が分かるようにする） */
-    USER_AGENT: 'JapanLawDatabase-GAS/1.0 (+e-Gov Law API v2 client)'
+    USER_AGENT: 'JapanLawDatabase-GAS/1.0 (+e-Gov Law API v2 client)',
+    /**
+     * 法令検索1ページあたりの取得件数。
+     * law_title は部分一致で検索されるため、候補が多くなりやすい。
+     */
+    SEARCH_PAGE_SIZE: 100,
+    /**
+     * 法令検索でページを送る最大回数。
+     * 「所得税法等の一部を改正する法律」のような同名を含む法令が
+     * 大量に存在するため、本命が埋もれないよう複数ページを確認する。
+     */
+    MAX_SEARCH_PAGES: 5
   },
 
   /** 実行時間制御（GASは1実行あたり最大6分の制限がある） */

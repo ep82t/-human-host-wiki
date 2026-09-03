@@ -81,7 +81,18 @@ var CONFIG = {
     /** リトライ対象のHTTPステータス */
     RETRYABLE_STATUS: [408, 425, 429, 500, 502, 503, 504],
     /** User-Agent 相当の識別文字列（問い合わせ先が分かるようにする） */
-    USER_AGENT: 'JapanLawDatabase-GAS/1.0 (+e-Gov Law API v2 client)'
+    USER_AGENT: 'JapanLawDatabase-GAS/1.0 (+e-Gov Law API v2 client)',
+    /**
+     * 法令検索1ページあたりの取得件数。
+     * law_title は部分一致で検索されるため、候補が多くなりやすい。
+     */
+    SEARCH_PAGE_SIZE: 100,
+    /**
+     * 法令検索でページを送る最大回数。
+     * 「所得税法等の一部を改正する法律」のような同名を含む法令が
+     * 大量に存在するため、本命が埋もれないよう複数ページを確認する。
+     */
+    MAX_SEARCH_PAGES: 5
   },
 
   /** 実行時間制御（GASは1実行あたり最大6分の制限がある） */
@@ -1982,52 +1993,141 @@ function apiGet_(url, logger, parseJson) {
 /**
  * 法令名で法令を検索する。
  *
- * 検索手段は環境により異なり得るため、複数の方法を順に試す。
- *   1. /laws に法令名を指定して絞り込む
- *   2. 1で0件なら /keyword で検索する
+ * 重要な注意点
+ * ------------
+ * e-Gov の law_title は **部分一致** で検索される。
+ * 例えば「所得税法」で検索すると、次のようなものも大量にヒットする。
+ *
+ *   - 所得税法（本命）
+ *   - 所得税法等の一部を改正する法律（年度ごとに多数存在する）
+ *   - ...所得税法等の臨時特例に関する法律
+ *
+ * そのため1ページ目だけを見ていると、本命の法令が埋もれて
+ * 「見つからない」と誤判定する恐れがある。
+ * 本関数は **完全一致する法令が見つかるまでページを送る**。
  *
  * @param {string} lawName 法令名
  * @param {!Logger_} logger ロガー
- * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string}}
+ * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string,
+ *           pages: number, exactFound: boolean}}
  */
 function searchLawsByName(lawName, logger) {
-  var queryParams = {};
-  queryParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = lawName;
-  queryParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
-  queryParams[EGOV_API_SPEC.PARAMS.LIMIT] = 100;
+  var collected = [];
+  var seenIds = {};
+  var pages = 0;
+  var lastUrl = '';
+  var target = normalizeLawName(lawName);
+  var exactFound = false;
 
-  var url = buildEgovUrl('LAWS', {}, queryParams);
-  var result = apiGet_(url, logger, true);
-
-  if (result.ok) {
-    var list = pickLawList(result.data);
-    if (list.length > 0) {
-      return { ok: true, candidates: list, error: null, url: url };
+  for (var page = 0; page < CONFIG.HTTP.MAX_SEARCH_PAGES; page++) {
+    var queryParams = {};
+    queryParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = lawName;
+    queryParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
+    if (page > 0) {
+      queryParams[EGOV_API_SPEC.PARAMS.OFFSET] = page * CONFIG.HTTP.SEARCH_PAGE_SIZE;
     }
-    logger.info('法令一覧APIで0件のため、キーワード検索を試みます', { law_name: lawName });
-  } else {
-    logger.warn('法令一覧APIの呼び出しに失敗しました。キーワード検索へ切り替えます', {
-      law_name: lawName, error: result.error, status: result.status
+
+    var url = buildEgovUrl('LAWS', {}, queryParams);
+    lastUrl = url;
+    var result = apiGet_(url, logger, true);
+
+    if (!result.ok) {
+      if (page === 0) {
+        logger.warn('法令一覧APIの呼び出しに失敗しました。キーワード検索へ切り替えます', {
+          law_name: lawName, error: result.error, status: result.status
+        });
+        return searchLawsByKeyword_(lawName, logger);
+      }
+      break;  // 2ページ目以降の失敗は、取得済みの分で判断する
+    }
+
+    var list = pickLawList(result.data);
+    if (list.length === 0) {
+      break;
+    }
+
+    // 同じ結果が返ってきた場合、offset が効いていないためページ送りを止める
+    var newCount = 0;
+    list.forEach(function (item) {
+      var info = readLawInfo(item);
+      var key = info.law_id || info.law_num || JSON.stringify(item);
+      if (seenIds[key]) {
+        return;
+      }
+      seenIds[key] = true;
+      newCount++;
+      collected.push(item);
+      if (normalizeLawName(info.law_title) === target) {
+        exactFound = true;
+      }
     });
+
+    pages++;
+
+    if (newCount === 0) {
+      // offset が無視されている（同じページが返ってきた）
+      break;
+    }
+    if (exactFound) {
+      break;  // 本命が見つかったので、これ以上ページを送らない
+    }
+    if (list.length < CONFIG.HTTP.SEARCH_PAGE_SIZE) {
+      break;  // 最終ページ
+    }
   }
 
-  // フォールバック: キーワード検索
+  if (collected.length === 0) {
+    logger.info('法令一覧APIで0件のため、キーワード検索を試みます', { law_name: lawName });
+    return searchLawsByKeyword_(lawName, logger);
+  }
+
+  if (!exactFound) {
+    logger.warn(
+      '完全一致する法令名が見つかりませんでした（部分一致の候補のみ）', {
+        law_name: lawName, candidates: collected.length, pages: pages
+      });
+  }
+
+  return {
+    ok: true, candidates: collected, error: null, url: lastUrl,
+    pages: pages, exactFound: exactFound
+  };
+}
+
+/**
+ * キーワード検索で法令を探す（法令一覧APIが使えない場合のフォールバック）。
+ *
+ * @param {string} lawName 法令名
+ * @param {!Logger_} logger ロガー
+ * @return {{ok: boolean, candidates: !Array<!Object>, error: ?string, url: string,
+ *           pages: number, exactFound: boolean}}
+ * @private
+ */
+function searchLawsByKeyword_(lawName, logger) {
   var kwParams = {};
   kwParams[EGOV_API_SPEC.PARAMS.KEYWORD] = lawName;
-  kwParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
-  kwParams[EGOV_API_SPEC.PARAMS.LIMIT] = 100;
+  kwParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
 
   var kwUrl = buildEgovUrl('KEYWORD', {}, kwParams);
   var kwResult = apiGet_(kwUrl, logger, true);
 
   if (!kwResult.ok) {
     return {
-      ok: false, candidates: [], url: kwUrl,
+      ok: false, candidates: [], url: kwUrl, pages: 0, exactFound: false,
       error: kwResult.error || 'キーワード検索に失敗しました'
     };
   }
 
-  return { ok: true, candidates: pickLawList(kwResult.data), error: null, url: kwUrl };
+  var candidates = pickLawList(kwResult.data);
+  var target = normalizeLawName(lawName);
+  var exactFound = candidates.some(function (item) {
+    return normalizeLawName(readLawInfo(item).law_title) === target;
+  });
+
+  return {
+    ok: true, candidates: candidates, error: null, url: kwUrl,
+    pages: 1, exactFound: exactFound
+  };
 }
 
 /**
@@ -2384,7 +2484,8 @@ function probeApiSpec(lawName) {
   // --- 1. 法令一覧APIで検索できるか ---
   var searchParams = {};
   searchParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = target;
-  searchParams[EGOV_API_SPEC.PARAMS.LIMIT] = 3;
+  // 部分一致のため候補が多い。本命が埋もれないよう多めに取得する
+  searchParams[EGOV_API_SPEC.PARAMS.LIMIT] = CONFIG.HTTP.SEARCH_PAGE_SIZE;
   var searchUrl = buildEgovUrl('LAWS', {}, searchParams);
 
   console.log('[1] 法令検索');
@@ -2411,8 +2512,35 @@ function probeApiSpec(lawName) {
     return { ok: false, steps: steps, lawId: '', contentFormat: '' };
   }
 
-  var info = readLawInfo(candidates[0]);
+  // law_title は部分一致で検索されるため、1件目が目的の法令とは限らない。
+  // 実際の同期処理と同じく「法令名が完全一致するもの」を選ぶ。
+  var normalizedTarget = normalizeLawName(target);
+  var exact = null;
+  candidates.forEach(function (item) {
+    if (exact) {
+      return;
+    }
+    var candidateInfo = readLawInfo(item);
+    if (normalizeLawName(candidateInfo.law_title) === normalizedTarget) {
+      exact = candidateInfo;
+    }
+  });
+
+  if (!exact) {
+    console.log('    ⚠ 「' + target + '」と完全一致する法令が見つかりませんでした。');
+    console.log('      e-Govの検索は部分一致のため、名前に「' + target + '」を含む');
+    console.log('      別の法令だけがヒットしています。候補の例:');
+    candidates.slice(0, 3).forEach(function (item) {
+      console.log('        - ' + readLawInfo(item).law_title);
+    });
+    steps.push({ step: 'search', ok: false, detail: '完全一致なし' });
+    printProbeVerdict_(steps);
+    return { ok: false, steps: steps, lawId: '', contentFormat: '' };
+  }
+
+  var info = exact;
   lawId = info.law_id;
+  console.log('    （部分一致の候補から、名前が完全一致するものを選びました）');
   console.log('    法令名  : ' + (info.law_title || '(読み取れず)'));
   console.log('    法令番号: ' + (info.law_num || '(読み取れず)'));
   console.log('    法令ID  : ' + (info.law_id || '(読み取れず)'));
@@ -2531,9 +2659,11 @@ function printProbeVerdict_(steps) {
     console.log('   法令の検索・本文の取得ともに成功しました。');
     setProp(CONFIG.PROPERTY_KEYS.API_SPEC_VERIFIED_AT, nowIso());
   } else if (!searchOk) {
-    console.log('❌ 法令の検索に失敗しました。');
-    console.log('   02_api_spec.gs の ENDPOINTS.LAWS と PARAMS.LAW_TITLE を');
-    console.log('   確認してください。');
+    console.log('❌ 法令を特定できませんでした。');
+    console.log('   通信自体は成功している場合、法令名がe-Govの正式名称と');
+    console.log('   異なっている可能性があります。');
+    console.log('   通信から失敗している場合は、02_api_spec.gs の');
+    console.log('   ENDPOINTS.LAWS と PARAMS.LAW_TITLE を確認してください。');
   } else {
     console.log('❌ 法令は検索できましたが、本文を取得できませんでした。');
     console.log('   02_api_spec.gs の ENDPOINTS.LAW_DATA と');
@@ -6423,6 +6553,7 @@ function runAllTests() {
   test_廃止法令のステータス記録();
   test_本文がJSON形式で返る場合();
   test_XMLとJSONで同じ結果になること();
+  test_部分一致で本命法令が埋もれる場合();
 
   return summarizeTests_();
 }
@@ -7772,5 +7903,85 @@ function test_XMLとJSONで同じ結果になること() {
       buildStructuredJsonFromTree(fromXml, meta).unit_count,
       buildStructuredJsonFromTree(fromJson, meta).unit_count,
       '構造化JSONの条文単位数が一致する');
+  });
+}
+
+/**
+ * 部分一致検索で似た名前の法令が大量にヒットしても、
+ * 本命の法令を正しく特定できること。
+ *
+ * これは実際のe-Govで起きた事象を再現したもの。
+ * 「所得税法」で検索すると、次のような法令が先に返ってくる。
+ *   - 日本国とアメリカ合衆国との間の...所得税法等の臨時特例に関する法律
+ *   - 所得税法等の一部を改正する法律（年度ごとに多数存在）
+ */
+function test_部分一致で本命法令が埋もれる場合() {
+  runTest_('部分一致で本命法令が埋もれる場合', function () {
+    withTestContext_(function (ctx) {
+      // 1ページ目は紛らわしい法令だけ、2ページ目に本命が現れる状況を作る
+      var decoys = [];
+      for (var i = 0; i < 100; i++) {
+        decoys.push({
+          law_info: {
+            law_id: 'DECOY' + i, law_num: '令和' + i + '年法律第1号', law_type: 'Act'
+          },
+          revision_info: { law_title: '所得税法等の一部を改正する法律' }
+        });
+      }
+      decoys[0].revision_info.law_title =
+        '日本国とアメリカ合衆国との間の相互協力及び安全保障条約第六条に基づく' +
+        '施設及び区域並びに日本国における合衆国軍隊の地位に関する協定の実施に伴う' +
+        '所得税法等の臨時特例に関する法律';
+
+      var realLaw = {
+        law_info: {
+          law_id: '340AC0000000033',
+          law_num: '昭和四十年法律第三十三号',
+          law_type: 'Act'
+        },
+        revision_info: { law_title: '所得税法' }
+      };
+
+      setHttpOverrideForTest(function (url) {
+        if (url.indexOf('/laws?') !== -1 && url.indexOf('updated_from') !== -1) {
+          return okJson_(url, { laws: [] });
+        }
+        if (url.indexOf('/laws?') !== -1) {
+          // offset に応じてページを返す（2ページ目に本命がいる）
+          var offsetMatch = url.match(/offset=(\d+)/);
+          var offset = offsetMatch ? parseInt(offsetMatch[1], 10) : 0;
+          if (offset === 0) {
+            return okJson_(url, { laws: decoys });
+          }
+          return okJson_(url, { laws: [realLaw] });
+        }
+        if (url.indexOf('/law_data/340AC0000000033') !== -1) {
+          return {
+            ok: true, status: 200, url: url, attempts: 1, error: null,
+            body: getTestLawXml_('所得税法', '昭和四十年法律第三十三号')
+          };
+        }
+        return errorResult_(url, 404, '対象外のURL');
+      });
+
+      var summary = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+
+      assertEquals_(1, summary.updated_count,
+        '紛らわしい候補が100件あっても本命を取得できる');
+      assertEquals_(0, summary.skipped_count, 'スキップされない');
+
+      var state = loadSyncState(ctx.driveService);
+      var record = state.laws['340AC0000000033'];
+      assertTrue_(!!record, '本命の法令IDで保存されている');
+      assertEquals_('所得税法', record.law_name, '正しい法令名で保存されている');
+
+      // 紛らわしい法令が保存されていないこと
+      assertTrue_(!state.laws['DECOY0'], '紛らわしい法令は保存されていない');
+
+      var mdFolder = ctx.driveService.getMarkdownFolder('tax', 'act');
+      assertEquals_(1, countFiles_(mdFolder), '保存されたのは1件だけである');
+      assertTrue_(!!ctx.driveService.readTextFile(mdFolder, '所得税法.md'),
+        '所得税法.md が保存されている');
+    });
   });
 }
