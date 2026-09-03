@@ -30,18 +30,24 @@ function setup() {
   }
   logger.info('設定ファイルを検証しました', { law_count: configCheck.valid.length });
 
-  // --- 2. ルートフォルダの作成／再利用 ---
+  // --- 2. API仕様の自動チェック ---
+  // 利用者が verifyApiSpec() を実行し忘れても気付けるよう、ここで自動照合する。
+  // 照合に失敗しても処理は止めない（OpenAPI仕様書のURLが見つからないだけの
+  // 場合もあり、その場合でもAPI自体は正常に動くことがあるため）。
+  var specReport = runSpecPreCheck_(logger);
+
+  // --- 3. ルートフォルダの作成／再利用 ---
   var rootResult = ensureRootFolder(logger);
   logger.info(rootResult.created
     ? 'ルートフォルダを新規作成しました'
     : '既存のルートフォルダを再利用しました', { folder_id: rootResult.folderId });
 
-  // --- 3. フォルダ構成の作成 ---
+  // --- 4. フォルダ構成の作成 ---
   var driveService = new DriveService(rootResult.folderId, logger);
   var paths = ensureFolderStructure(driveService);
   logger.info('フォルダ構成を確認しました', { folder_count: paths.length });
 
-  // --- 4. 初期ファイルの作成 ---
+  // --- 5. 初期ファイルの作成 ---
   var state = loadSyncState(driveService);
   writeDriveReadme(driveService, state);
   setProp(CONFIG.PROPERTY_KEYS.SETUP_COMPLETED_AT, nowIso());
@@ -55,16 +61,17 @@ function setup() {
   console.log('続けて、対象法令の取得を開始します...');
   console.log('');
 
-  // --- 5. 全法令を取得する ---
+  // --- 6. 全法令を取得する ---
   var syncSummary = runSync({ runName: 'setup_sync', forceAll: true, dryRun: false });
 
-  printSetupResult_(rootResult, paths.length, syncSummary);
+  printSetupResult_(rootResult, paths.length, syncSummary, specReport);
 
   return {
     ok: true,
     root_folder_id: rootResult.folderId,
     root_folder_created: rootResult.created,
     folder_count: paths.length,
+    api_spec_ok: specReport.ok,
     sync: syncSummary
   };
 }
@@ -277,17 +284,70 @@ function resetRootFolder() {
 }
 
 /**
+ * API仕様の事前チェックを行う。
+ *
+ * 照合に失敗しても例外は投げない。OpenAPI仕様書のURLが見つからないだけで
+ * API自体は正常に動く場合があり、ここで処理を止めると
+ * かえって原因が分かりにくくなるためである。
+ *
+ * @param {!Logger_} logger ロガー
+ * @return {{ok: boolean, checked: boolean, missing_endpoints: !Array<string>}}
+ * @private
+ */
+function runSpecPreCheck_(logger) {
+  logger.info('e-Gov APIの仕様を公式OpenAPI仕様書と照合しています...');
+
+  var report;
+  try {
+    report = verifyApiSpec();
+  } catch (e) {
+    logger.warn('API仕様の照合中にエラーが発生しました（処理は継続します）', {
+      error: describeError(e)
+    });
+    return { ok: false, checked: false, missing_endpoints: [] };
+  }
+
+  if (report.ok) {
+    logger.info('API仕様の照合に成功しました。設定は公式仕様と一致しています');
+    return { ok: true, checked: true, missing_endpoints: [] };
+  }
+
+  if (!report.openapi_url) {
+    logger.warn(
+      'OpenAPI仕様書を自動取得できませんでした。設定値の正しさは未確認のまま処理を続けます。' +
+      '法令の取得がすべて失敗する場合は、02_api_spec.gs の見直しが必要です');
+    return { ok: false, checked: false, missing_endpoints: [] };
+  }
+
+  logger.error(
+    '設定したAPIのパスが公式仕様と一致しません。02_api_spec.gs の修正が必要です', {
+      missing: report.missing_endpoints.join(' / ')
+    });
+  return {
+    ok: false, checked: true, missing_endpoints: report.missing_endpoints
+  };
+}
+
+/**
  * セットアップ結果を分かりやすく表示する。
  *
  * @param {{folderId: string, created: boolean}} rootResult ルートフォルダの作成結果
  * @param {number} folderCount 作成・確認したフォルダ数
  * @param {!Object} syncSummary 同期結果のサマリ
+ * @param {!Object=} specReport API仕様チェックの結果
  * @private
  */
-function printSetupResult_(rootResult, folderCount, syncSummary) {
+function printSetupResult_(rootResult, folderCount, syncSummary, specReport) {
+  // 1件も取得できなかった場合、「完了しました」は誤解を招くため表示を変える
+  var allFailed = syncSummary.target_count > 0 && syncSummary.success_count === 0;
+
   console.log('');
   console.log('==========================================');
-  console.log('  初回セットアップが完了しました');
+  if (allFailed) {
+    console.log('  セットアップは未完了です（法令を取得できていません）');
+  } else {
+    console.log('  初回セットアップが完了しました');
+  }
   console.log('==========================================');
   console.log('');
   console.log('[Google Drive]');
@@ -305,19 +365,52 @@ function printSetupResult_(rootResult, folderCount, syncSummary) {
   console.log('  失敗件数　　: ' + syncSummary.failed_count);
   console.log('');
 
+  console.log('[API仕様の照合]');
+  if (!specReport) {
+    console.log('  未実施');
+  } else if (specReport.ok) {
+    console.log('  OK（設定は公式仕様と一致しています）');
+  } else if (!specReport.checked) {
+    console.log('  未確認（公式のOpenAPI仕様書を取得できませんでした）');
+  } else {
+    console.log('  ⚠ 不一致あり: ' + specReport.missing_endpoints.join(' / '));
+  }
+  console.log('');
+
   if (syncSummary.failures.length > 0) {
+    // 全件失敗時に45行並ぶと読みにくいため、先頭のみ表示する。
+    // 全件は 99_システムログ のログファイルに記録されている。
+    var MAX_SHOWN = 10;
     console.log('[取得できなかった法令]');
-    console.log('  以下は保存されていません。法令名がe-Govの正式名称と一致しているか、');
-    console.log('  01_laws_config.gs を確認してください。');
-    syncSummary.failures.forEach(function (failure) {
+    syncSummary.failures.slice(0, MAX_SHOWN).forEach(function (failure) {
       console.log('  - ' + failure.law_name + ': ' + failure.reason);
     });
+    if (syncSummary.failures.length > MAX_SHOWN) {
+      console.log('  ...他 ' + (syncSummary.failures.length - MAX_SHOWN) + ' 件' +
+        '（全件は ' + CONFIG.FOLDERS.SYSTEM_LOG + ' のログを参照）');
+    }
     console.log('');
   }
 
   console.log('[次にすること]');
-  console.log('  1. Google Drive で「' + CONFIG.ROOT_FOLDER_NAME + '」を開いて中身を確認する');
-  console.log('  2. installTrigger() を実行して毎日の自動更新を設定する');
-  console.log('  3. 詳しい状態は showStatus() で確認できる');
+  if (allFailed) {
+    console.log('  ⚠ 1件も取得できていません。次の順に確認してください。');
+    console.log('');
+    console.log('  1. verifyApiSpec() を実行し、レポートを確認する');
+    console.log('  2. レポートの「公式仕様に存在するパス」と「GET ... のパラメータ」を見て、');
+    console.log('     02_api_spec.gs の ENDPOINTS と PARAMS を実際の値に修正する');
+    console.log('  3. もう一度 setup() を実行する');
+    console.log('');
+    console.log('  ※ Drive上のフォルダは作成済みです。作り直す必要はありません。');
+  } else {
+    console.log('  1. Google Drive で「' + CONFIG.ROOT_FOLDER_NAME + '」を開いて中身を確認する');
+    console.log('  2. installTrigger() を実行して毎日の自動更新を設定する');
+    console.log('  3. 詳しい状態は showStatus() で確認できる');
+    if (syncSummary.failures.length > 0) {
+      console.log('');
+      console.log('  取得できなかった法令については、法令名がe-Govの正式名称と');
+      console.log('  一致しているか 01_laws_config.gs を確認してください。');
+    }
+  }
   console.log('');
 }
