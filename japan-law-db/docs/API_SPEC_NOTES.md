@@ -61,14 +61,73 @@ Webページ取得ツールでも同じく遮断されました
 
 | 対象 | 内容 |
 | --- | --- |
-| **APIのパス** | `/laws` `/law_data/{...}` `/law_revisions/{...}` `/keyword` |
-| **クエリパラメータ名** | `response_format` `law_title` `keyword` `asof` `limit` など |
-| **レスポンス項目名** | `law_id` `law_num` `law_title` `law_full_text` など |
+| **`/law_revisions` のパス** | 稼働クライアントでの使用例を確認できず |
 | **`law_type` の enum 値** | `Act` `CabinetOrder` `MinisterialOrdinance` など |
 | **廃止状態のフィールド** | `repeal_status` `repeal_date` の実際の名前と値 |
 | **更新法令情報の取得方法** | `updated_from` パラメータの有無と取得可能期間 |
-| **XML形式での取得可否** | `response_format=xml` が使えるか |
+| **XML形式での取得可否** | `law_full_text_format=xml` が使えるか（JSONは確認済み） |
 | **利用制限** | レート制限の明示的な規定の有無 |
+
+※ 主要なパス・パラメータ・レスポンス構造は「2.5」で照合済みです。
+
+---
+
+## 2.5. 稼働中クライアント実装による照合（重要）
+
+公式仕様書へは到達できませんでしたが、**npmレジストリは到達可能**でした。
+そこで、実際に e-Gov 法令API v2 を呼び出している公開パッケージのソースコードを
+取得し、実装と照合しました。
+
+照合したパッケージ:
+
+- [`@gonuts555/e-gov-mcp`](https://www.npmjs.com/package/@gonuts555/e-gov-mcp) v1.2.1
+- [`law-mcp-server`](https://www.npmjs.com/package/law-mcp-server) v0.3.1
+
+### 照合の結果、確認できたこと
+
+| 項目 | 確認された値 | 当初の設定 |
+| --- | --- | --- |
+| ベースURL | `https://laws.e-gov.go.jp/api/2` | ✅ 一致 |
+| 法令一覧 | `GET /laws?law_title=&law_num=&law_type=&limit=` | ✅ 一致 |
+| 法令本文 | `GET /law_data/{lawId}` | ✅ 一致 |
+| キーワード検索 | `GET /keyword?keyword=` | ✅ 一致 |
+| **本文形式の指定** | **`law_full_text_format`** | ❌ **`response_format` は誤り → 修正済** |
+| 時点指定 | `asof=YYYY-MM-DD` | ✅ 一致 |
+| 改正版指定 | `revision=YYYY-MM-DD` | ➕ 追加 |
+| 一覧レスポンス | `{ laws: [ { law_info, revision_info } ] }` | ✅ 候補に含まれていた |
+| 本文レスポンス | `{ law_info, revision_info, law_full_text }` | ✅ 候補に含まれていた |
+| 本文のJSON表現 | `{ tag, attr, children }` の入れ子 | ➕ 新たに判明 |
+
+### この照合により修正した重大な問題
+
+**1. 本文形式のパラメータ名が違っていた**
+
+`response_format` ではなく `law_full_text_format` でした。修正済みです。
+
+**2. JSON形式の本文で全件失敗する状態だった**
+
+両パッケージとも本文を **JSON形式でのみ** 取得しており、XML形式を使っていません。
+当初の実装は「本文がJSON構造で返された場合はスキップ」する作りだったため、
+**45件すべてが失敗する可能性が高い状態**でした。
+
+そこで次のように変更しました。
+
+- 本文のJSON表現 `{ tag, attr, children }` を内部の木構造へ変換するアダプタを追加
+  （キー名の対応付けのみ。**本文の文字列は一切書き換えない**）
+- XMLで取得できた場合とJSONで取得できた場合で、
+  **生成されるMarkdownが完全に一致する**ことをテストで検証
+- 原本は、取得できた形式のまま無加工で保存する
+  （XMLなら `.xml`、JSONなら `.json`）。
+  **JSONから疑似的なXMLを組み立てることはしない**（原本性が失われるため）
+
+### 注意：これも二次情報です
+
+第三者の実装であり、公式仕様書ではありません。
+また、XML形式が利用できるかどうかは**確認できていません**
+（両パッケージともJSONのみを使用）。
+現在の実装は XML → JSON の順に試すため、XMLが使えるなら自動的にXMLが選ばれます。
+
+`verifyApiSpec()` による公式仕様との照合は、引き続き実施してください。
 
 ---
 

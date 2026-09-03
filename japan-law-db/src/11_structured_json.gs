@@ -27,7 +27,20 @@
  *           unit_count: number, units: !Array<!Object>}}
  */
 function buildStructuredJson(xmlText, meta) {
-  var root = parseLawXml(xmlText);
+  return buildStructuredJsonFromTree(parseLawXml(xmlText), meta);
+}
+
+/**
+ * 解析済みの法令木構造から構造化JSONを生成する。
+ *
+ * 取得形式がXMLでもJSONでも、木構造へ変換したあとは同じ処理を通る。
+ *
+ * @param {!LawNode} root 法令のルートノード
+ * @param {!Object} meta メタデータ（law_id / law_name を含む）
+ * @return {{law_id: string, law_name: string, generated_at: string,
+ *           unit_count: number, units: !Array<!Object>}}
+ */
+function buildStructuredJsonFromTree(root, meta) {
   var info = meta || {};
   var lawTitleNode = findDescendant(root, 'LawTitle');
   var lawName = info.law_name || (lawTitleNode ? getTrimmedText(lawTitleNode) : '');

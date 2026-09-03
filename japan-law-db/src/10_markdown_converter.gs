@@ -59,7 +59,19 @@ var SUBITEM_LEVELS = (function () {
  * @throws {Error} XMLが解析できない場合
  */
 function convertLawXmlToMarkdown(xmlText, meta) {
-  var root = parseLawXml(xmlText);
+  return convertLawToMarkdown(parseLawXml(xmlText), meta);
+}
+
+/**
+ * 解析済みの法令木構造をMarkdownへ変換する。
+ *
+ * 取得形式がXMLでもJSONでも、木構造へ変換したあとは同じ処理を通る。
+ *
+ * @param {!LawNode} root 法令のルートノード
+ * @param {!Object} meta メタデータ（YAML Front Matterに書き出す内容）
+ * @return {{markdown: string, lawTitle: string, lawNum: string, warnings: !Array<string>}}
+ */
+function convertLawToMarkdown(root, meta) {
   var warnings = [];
 
   if (root.attrs && root.attrs.__unclosed) {

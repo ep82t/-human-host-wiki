@@ -283,26 +283,19 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   var lawInfo = resolution.lawInfo;
   var identifier = lawInfo.law_id || lawInfo.law_num;
 
-  // --- 2. 本文XMLを取得する ---
-  var fetched = fetchLawXml(identifier, logger);
+  // --- 2. 本文を取得する（XMLを優先し、得られなければJSON） ---
+  var fetched = fetchLawContent(identifier, logger);
   if (!fetched.ok) {
     return { status: 'failed', reason: fetched.error, record: null, plan: null };
   }
 
-  // --- 3. XMLを検証する（保存前に壊れたデータを弾く） ---
-  var parsedRoot;
-  try {
-    parsedRoot = parseLawXml(fetched.xml);
-  } catch (e) {
+  // --- 3. 内容を検証する（保存前に壊れたデータを弾く） ---
+  var parsedRoot = fetched.tree;
+  if (!parsedRoot || parsedRoot.name !== 'Law') {
     return {
       status: 'failed', record: null, plan: null,
-      reason: 'XML解析エラー: ' + describeError(e)
-    };
-  }
-  if (parsedRoot.name !== 'Law') {
-    return {
-      status: 'failed', record: null, plan: null,
-      reason: '取得したXMLのルート要素が Law ではありません（実際: ' + parsedRoot.name + '）'
+      reason: '取得した本文のルート要素が Law ではありません（実際: ' +
+              (parsedRoot ? parsedRoot.name : 'なし') + '）'
     };
   }
 
@@ -317,7 +310,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   }
 
   // --- 4. ハッシュで差分を判定する ---
-  var newHash = computeLawHash(fetched.xml);
+  var newHash = computeLawHash(fetched.raw);
   var previous = findStateRecord(state, lawConfig, lawInfo.law_id);
   var isUnchanged = previous && isSameHash(previous.last_hash, newHash);
 
@@ -349,7 +342,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   // --- 6. Markdownと構造化JSONを生成する ---
   var lawTypeKey = decideLawTypeKey(lawInfo, lawConfig);
   var meta = buildLawMetadata(lawConfig, lawInfo, lawTypeKey, status, fetched.url);
-  var converted = convertLawXmlToMarkdown(fetched.xml, meta);
+  var converted = convertLawToMarkdown(parsedRoot, meta);
 
   converted.warnings.forEach(function (warning) {
     logger.warn('Markdown変換の警告: ' + warning, { law_name: lawInfo.law_title });
@@ -358,14 +351,27 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   // --- 7. 旧データを履歴へ退避する ---
   var baseName = sanitizeFileName(lawInfo.law_title || lawConfig.name);
   if (previous && CONFIG.SYNC.KEEP_HISTORY) {
-    archivePrevious_(previous, baseName, lawConfig, driveService, logger);
+    archivePrevious_(previous, baseName, lawConfig, driveService, logger,
+      previous.raw_file_name ? previous.raw_file_name.split('.').pop() : 'xml');
   }
 
-  // --- 8. 原本XMLを保存する（加工しない） ---
+  // --- 8. 原本を保存する（加工しない） ---
+  // 取得形式がXMLなら .xml、JSONなら .json として保存する。
+  // どちらの場合も、e-Govが返した内容をそのまま保存する。
   var rawFolder = driveService.getRawXmlFolder(lawConfig.category);
+  var rawFileName = baseName + '.' + fetched.extension;
+  var previousRawName = previous && previous.raw_file_name ? previous.raw_file_name : null;
+
+  // 前回と形式が変わった場合、古い形式のファイルIDは使えないため作り直す
+  var reusableRawId = (previousRawName === null || previousRawName === rawFileName)
+    ? (previous ? previous.xml_file_id : null)
+    : null;
+
   var xmlResult = driveService.upsertTextFile(
-    rawFolder, baseName + '.xml', fetched.xml,
-    previous ? previous.xml_file_id : null, MimeType.PLAIN_TEXT);
+    rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+
+  // 台帳へ記録するため、実際に使ったファイル名を取得結果へ持たせる
+  fetched.rawFileName = rawFileName;
 
   // --- 9. Markdownを保存する ---
   var mdFolder = driveService.getMarkdownFolder(lawConfig.category, lawTypeKey);
@@ -377,7 +383,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   var structuredFileId = previous ? previous.structured_file_id : null;
   if (CONFIG.SYNC.GENERATE_STRUCTURED_JSON) {
     try {
-      var structured = buildStructuredJson(fetched.xml, meta);
+      var structured = buildStructuredJsonFromTree(parsedRoot, meta);
       var structuredFolder = driveService.getStructuredFolder(lawConfig.category);
       structuredFileId = driveService.upsertTextFile(
         structuredFolder, baseName + '.json', toPrettyJson(structured),
@@ -447,7 +453,7 @@ function enrichLawInfoFromXml_(lawInfo, root) {
  * @param {!Logger_} logger ロガー
  * @private
  */
-function archivePrevious_(previous, baseName, lawConfig, driveService, logger) {
+function archivePrevious_(previous, baseName, lawConfig, driveService, logger, rawExt) {
   try {
     var historyFolder = driveService.getHistoryFolder(lawConfig.category);
     var archivedAt = new Date();
@@ -459,11 +465,11 @@ function archivePrevious_(previous, baseName, lawConfig, driveService, logger) {
         historyFolder, baseName, 'md', oldMarkdown, archivedAt);
     }
 
-    var oldXml = previous.xml_file_id
+    var oldRaw = previous.xml_file_id
       ? driveService.readFileById(previous.xml_file_id) : null;
-    if (oldXml) {
+    if (oldRaw) {
       driveService.archiveToHistory(
-        historyFolder, baseName, 'xml', oldXml, archivedAt);
+        historyFolder, baseName, rawExt || 'xml', oldRaw, archivedAt);
     }
   } catch (e) {
     // 履歴退避の失敗で本体の更新を止めない
@@ -519,6 +525,8 @@ function buildStateRecord_(
     api_source_url: fetched.url,
     fetch_source: fetched.source,
     xml_file_id: xmlFileId,
+    raw_format: fetched.format,
+    raw_file_name: fetched.rawFileName || '',
     markdown_file_id: markdownFileId,
     structured_file_id: structuredFileId || '',
     last_hash: hash,

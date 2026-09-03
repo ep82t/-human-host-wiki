@@ -344,3 +344,92 @@ function getTrimmedText(node) {
     .replace(/[ \t]{2,}/g, ' ')      // 連続する半角空白・タブのみ1つに畳む
     .trim();
 }
+
+/**
+ * e-Gov の法令本文JSON表現を、本ファイルの木構造（LawNode）へ変換する。
+ *
+ * 背景
+ * ----
+ * 法令API v2 は law_full_text_format=json を指定すると、法令本文を
+ * XMLと同じ構造のJSONとして返す。その形は次のとおりで、
+ * 本ファイルが生成する LawNode とキー名が違うだけである。
+ *
+ *   { "tag": "Article", "attr": { "Num": "1" }, "children": [ ... ] }
+ *      tag      → LawNode.name
+ *      attr     → LawNode.attrs
+ *      children → LawNode.children（入れ子のノード、または本文の文字列）
+ *
+ * この変換により、XMLで取得できた場合と同じ処理
+ * （Markdown変換・構造化JSON生成）をそのまま流用できる。
+ *
+ * 注意: これは表現形式の相互変換であり、本文の加工ではない。
+ * 文字列は一切書き換えない。
+ *
+ * @param {(!Object|string)} jsonNode e-Gov のJSONノード
+ * @return {(!LawNode|string)} 変換後のノード
+ * @throws {Error} 変換できない形式の場合
+ */
+function convertJsonToLawNode(jsonNode) {
+  if (typeof jsonNode === 'string') {
+    return jsonNode;
+  }
+  if (!jsonNode || typeof jsonNode !== 'object') {
+    throw new Error('法令本文JSONの形式が想定と異なります');
+  }
+
+  // tag / name のどちらで来ても扱えるようにする
+  var name = jsonNode.tag || jsonNode.name || jsonNode.Tag;
+  if (!name) {
+    throw new Error('法令本文JSONに要素名（tag）がありません');
+  }
+
+  var sourceAttrs = jsonNode.attr || jsonNode.attrs || jsonNode.Attr || {};
+  var attrs = {};
+  Object.keys(sourceAttrs).forEach(function (key) {
+    var value = sourceAttrs[key];
+    if (value !== null && value !== undefined) {
+      attrs[key] = String(value);
+    }
+  });
+
+  var children = [];
+  var sourceChildren = jsonNode.children || jsonNode.Children || [];
+  if (Array.isArray(sourceChildren)) {
+    sourceChildren.forEach(function (child) {
+      if (child === null || child === undefined) {
+        return;
+      }
+      if (typeof child === 'string') {
+        // 要素間の空白のみの文字列は、XML解析時と同様に無視する
+        if (!/^[\s　]*$/.test(child)) {
+          children.push(child);
+        }
+        return;
+      }
+      children.push(convertJsonToLawNode(child));
+    });
+  } else if (typeof sourceChildren === 'string') {
+    children.push(sourceChildren);
+  }
+
+  return { name: name, attrs: attrs, children: children };
+}
+
+/**
+ * 取得した法令本文を、形式を問わず木構造（LawNode）へ変換する。
+ *
+ * @param {(string|!Object)} content 本文（XML文字列、またはJSONノード）
+ * @param {string} format 'xml' または 'json'
+ * @return {!LawNode} ルート要素のノード
+ * @throws {Error} 解析できない場合
+ */
+function parseLawContent(content, format) {
+  if (format === 'json') {
+    var node = convertJsonToLawNode(content);
+    if (typeof node === 'string') {
+      throw new Error('法令本文JSONのルートが要素ではありません');
+    }
+    return node;
+  }
+  return parseLawXml(String(content));
+}

@@ -48,8 +48,12 @@ var CONFIG = {
     KEEP_HISTORY: true,
     /** 構造化JSON（structured/）を生成するか。Phase 2機能。 */
     GENERATE_STRUCTURED_JSON: true,
-    /** 原本として保存する形式。'xml' を強く推奨。 */
-    RAW_FORMAT: 'xml'
+    /**
+     * 原本として優先する形式。'xml' を推奨。
+     * XMLで取得できない場合は、e-Govが返したJSONをそのまま原本として保存する
+     * （JSONから疑似的なXMLを組み立てることはしない）。
+     */
+    PREFERRED_RAW_FORMAT: 'xml'
   },
 
   /** ログ設定 */

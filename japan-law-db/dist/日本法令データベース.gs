@@ -103,8 +103,12 @@ var CONFIG = {
     KEEP_HISTORY: true,
     /** 構造化JSON（structured/）を生成するか。Phase 2機能。 */
     GENERATE_STRUCTURED_JSON: true,
-    /** 原本として保存する形式。'xml' を強く推奨。 */
-    RAW_FORMAT: 'xml'
+    /**
+     * 原本として優先する形式。'xml' を推奨。
+     * XMLで取得できない場合は、e-Govが返したJSONをそのまま原本として保存する
+     * （JSONから疑似的なXMLを組み立てることはしない）。
+     */
+    PREFERRED_RAW_FORMAT: 'xml'
   },
 
   /** ログ設定 */
@@ -894,11 +898,29 @@ function findLawConfigByName(name) {
  *
  * 重要（必ず読むこと）
  * --------------------
- * ここに書かれたパス・パラメータ名は「暫定値」である。
  * 実運用前に必ず {@link verifyApiSpec} を実行し、
  * 公式OpenAPI仕様（https://laws.e-gov.go.jp/api/2/swagger-ui/）と
  * 突き合わせて差異がないことを確認すること。
  * 差異があった場合は、コード本体ではなく **このファイルの値を修正** すれば動く。
+ *
+ * 確認状況（2026-09-03時点）
+ * --------------------------
+ * 実装環境から laws.e-gov.go.jp へ到達できなかったため、公式仕様書は未確認。
+ * ただし、実際に稼働している公開クライアント実装
+ * （npm: @gonuts555/e-gov-mcp, law-mcp-server）のソースコードを照合し、
+ * 以下を確認済みとした。
+ *
+ *   - ベースURL          : https://laws.e-gov.go.jp/api/2
+ *   - GET /laws          : law_title / law_num / law_type / limit
+ *                          （law_title は「部分一致」で検索される）
+ *   - GET /law_data/{id} : law_full_text_format / asof / revision
+ *   - GET /keyword       : keyword
+ *   - レスポンス構造     : { laws: [ { law_info: {...}, revision_info: {...} } ] }
+ *                          { law_info, revision_info, law_full_text }
+ *   - 本文のJSON表現     : { tag, attr, children } の入れ子。文字列は本文テキスト
+ *
+ * 特に注意：本文形式の指定は response_format ではなく
+ * **law_full_text_format** である。
  *
  * レスポンス項目名については、単一の名前を決め打ちせず
  * FIELD_CANDIDATES に「あり得る名前の候補配列」を持たせ、
@@ -949,7 +971,7 @@ var EGOV_API_SPEC = {
     LAW_DATA: {
       path: '/law_data/{lawIdOrNumOrRevisionId}',
       method: 'get',
-      note: '法令本文取得。response_format で json / xml を切り替える想定。'
+      note: '法令本文取得。law_full_text_format で json / xml を切り替える。'
     },
     /** 法令履歴一覧取得 */
     LAW_REVISIONS: {
@@ -983,14 +1005,27 @@ var EGOV_API_SPEC = {
    * @type {!Object<string, string>}
    */
   PARAMS: {
-    RESPONSE_FORMAT: 'response_format',
-    LAW_TYPE: 'law_type',
-    LAW_NUM: 'law_num',
+    // --- 実際に稼働しているクライアント実装で確認済みのパラメータ ---
+    /** 法令本文の形式。'json' / 'xml'。※ response_format ではない点に注意 */
+    LAW_FULL_TEXT_FORMAT: 'law_full_text_format',
+    /** 法令名（部分一致で検索される。完全一致は呼び出し側で絞り込むこと） */
     LAW_TITLE: 'law_title',
-    LAW_TITLE_KANA: 'law_title_kana',
-    KEYWORD: 'keyword',
-    ASOF: 'asof',
+    /** 法令番号 */
+    LAW_NUM: 'law_num',
+    /** 法令種別 */
+    LAW_TYPE: 'law_type',
+    /** 取得件数の上限 */
     LIMIT: 'limit',
+    /** キーワード検索の検索語 */
+    KEYWORD: 'keyword',
+    /** 時点指定（YYYY-MM-DD）。その日時点で有効な法令を取得する */
+    ASOF: 'asof',
+    /** 改正版の指定（YYYY-MM-DD） */
+    REVISION: 'revision',
+
+    // --- 未確認のパラメータ（verifyApiSpec() で確認すること） ---
+    RESPONSE_FORMAT: 'response_format',
+    LAW_TITLE_KANA: 'law_title_kana',
     OFFSET: 'offset',
     CATEGORY_CD: 'category_cd',
     PROMULGATION_DATE_FROM: 'promulgation_date_from',
@@ -1003,7 +1038,7 @@ var EGOV_API_SPEC = {
     SENTENCE_TEXT_SIZE: 'sentence_text_size'
   },
 
-  /** response_format パラメータに渡す値 */
+  /** 本文形式パラメータ（law_full_text_format）に渡す値 */
   FORMATS: {
     JSON: 'json',
     XML: 'xml'
@@ -1996,40 +2031,53 @@ function searchLawsByName(lawName, logger) {
 }
 
 /**
- * 法令本文をXML形式で取得する。
+ * 法令本文を取得する。
  *
- * 長期保存する原本はXMLを優先する。
- * XMLで取得できない場合は、JSONレスポンス内の本文フィールドから
- * XML文字列を取り出すフォールバックを試みる。
+ * 原本の優先順位
+ * --------------
+ *   1. XML形式（長期保存の原本として最も望ましい）
+ *   2. JSON形式（XMLが得られない場合。**レスポンスをそのまま原本として保存する**）
+ *
+ * JSONで取得した場合も、本文は e-Gov が返した構造をそのまま保持する。
+ * JSONから疑似的なXMLを組み立てるようなことはしない（原本性が失われるため）。
  *
  * @param {string} lawIdOrNum 法令IDまたは法令番号（法令履歴IDも可）
  * @param {!Logger_} logger ロガー
- * @return {{ok: boolean, xml: ?string, source: string, url: string,
+ * @return {{ok: boolean, raw: ?string, tree: ?Object, format: string,
+ *           extension: string, source: string, url: string,
  *           error: ?string, meta: ?Object}}
+ *     raw       : 保存すべき原本の文字列（無加工）
+ *     tree      : 解析済みの法令木構造
+ *     format    : 'xml' | 'json'
+ *     extension : 保存時の拡張子
  */
-function fetchLawXml(lawIdOrNum, logger) {
+function fetchLawContent(lawIdOrNum, logger) {
   var pathParams = { lawIdOrNumOrRevisionId: lawIdOrNum };
+  var attempts = [];
 
-  // --- 1. law_data を XML 形式で取得する（最優先） ---
+  // --- 1. XML形式での取得を試みる（原本として最優先） ---
   var xmlParams = {};
-  xmlParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.XML;
+  xmlParams[EGOV_API_SPEC.PARAMS.LAW_FULL_TEXT_FORMAT] = EGOV_API_SPEC.FORMATS.XML;
   var xmlUrl = buildEgovUrl('LAW_DATA', pathParams, xmlParams);
   var xmlResult = apiGet_(xmlUrl, logger, false);
 
   if (xmlResult.ok && looksLikeLawXml_(xmlResult.body)) {
-    return {
-      ok: true, xml: xmlResult.body, source: 'law_data(xml)',
-      url: xmlUrl, error: null, meta: null
-    };
+    try {
+      return {
+        ok: true, raw: xmlResult.body, tree: parseLawXml(xmlResult.body),
+        format: 'xml', extension: 'xml', source: 'law_data(xml)',
+        url: xmlUrl, error: null, meta: null
+      };
+    } catch (e) {
+      attempts.push('law_data(xml): 解析失敗 ' + describeError(e));
+    }
+  } else {
+    attempts.push('law_data(xml): ' + (xmlResult.error || 'HTTP ' + xmlResult.status));
   }
 
-  logger.warn('law_data のXML取得に失敗したため、JSON経由での取得を試みます', {
-    law: lawIdOrNum, status: xmlResult.status, error: xmlResult.error
-  });
-
-  // --- 2. law_data を JSON で取得し、本文XMLを取り出す ---
+  // --- 2. JSON形式で取得する ---
   var jsonParams = {};
-  jsonParams[EGOV_API_SPEC.PARAMS.RESPONSE_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
+  jsonParams[EGOV_API_SPEC.PARAMS.LAW_FULL_TEXT_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
   var jsonUrl = buildEgovUrl('LAW_DATA', pathParams, jsonParams);
   var jsonResult = apiGet_(jsonUrl, logger, true);
 
@@ -2037,22 +2085,41 @@ function fetchLawXml(lawIdOrNum, logger) {
     var fullText = pickField(
       jsonResult.data, EGOV_API_SPEC.FIELD_CANDIDATES.LAW_FULL_TEXT, null);
 
+    // 本文がXML文字列で返る場合
     if (typeof fullText === 'string' && looksLikeLawXml_(fullText)) {
-      return {
-        ok: true, xml: fullText, source: 'law_data(json.law_full_text)',
-        url: jsonUrl, error: null, meta: jsonResult.data
-      };
+      try {
+        return {
+          ok: true, raw: fullText, tree: parseLawXml(fullText),
+          format: 'xml', extension: 'xml', source: 'law_data(json.law_full_text=xml)',
+          url: jsonUrl, error: null, meta: jsonResult.data
+        };
+      } catch (e) {
+        attempts.push('law_data(json内XML): 解析失敗 ' + describeError(e));
+      }
     }
 
-    // 本文がJSONオブジェクトで返る場合、原本XMLとしては扱えない。
-    // 推測でXMLへ組み立てると原本性が失われるため、明確にエラーとする。
+    // 本文が構造化JSONで返る場合（法令API v2 の既定の形式）
     if (fullText && typeof fullText === 'object') {
-      return {
-        ok: false, xml: null, source: 'law_data(json)', url: jsonUrl, meta: jsonResult.data,
-        error: '本文がJSON構造で返されました。原本XMLとして保存できないためスキップします' +
-               '（law_file エンドポイントの利用可否を確認してください）'
-      };
+      try {
+        var tree = parseLawContent(fullText, 'json');
+        logger.info('本文をJSON形式で取得しました（原本はJSONのまま保存します）', {
+          law: lawIdOrNum
+        });
+        return {
+          ok: true,
+          // レスポンス全体を原本として保存する（書誌情報も含まれるため）
+          raw: JSON.stringify(jsonResult.data, null, 2),
+          tree: tree, format: 'json', extension: 'json',
+          source: 'law_data(json)', url: jsonUrl, error: null, meta: jsonResult.data
+        };
+      } catch (e) {
+        attempts.push('law_data(json): 構造変換に失敗 ' + describeError(e));
+      }
+    } else if (!fullText) {
+      attempts.push('law_data(json): 本文フィールドが見つかりません');
     }
+  } else {
+    attempts.push('law_data(json): ' + (jsonResult.error || 'HTTP ' + jsonResult.status));
   }
 
   // --- 3. law_file エンドポイントを試す ---
@@ -2061,17 +2128,23 @@ function fetchLawXml(lawIdOrNum, logger) {
   var fileResult = apiGet_(fileUrl, logger, false);
 
   if (fileResult.ok && looksLikeLawXml_(fileResult.body)) {
-    return {
-      ok: true, xml: fileResult.body, source: 'law_file(xml)',
-      url: fileUrl, error: null, meta: null
-    };
+    try {
+      return {
+        ok: true, raw: fileResult.body, tree: parseLawXml(fileResult.body),
+        format: 'xml', extension: 'xml', source: 'law_file(xml)',
+        url: fileUrl, error: null, meta: null
+      };
+    } catch (e) {
+      attempts.push('law_file(xml): 解析失敗 ' + describeError(e));
+    }
+  } else {
+    attempts.push('law_file(xml): ' + (fileResult.error || 'HTTP ' + fileResult.status));
   }
 
   return {
-    ok: false, xml: null, source: 'none', url: xmlUrl, meta: null,
-    error: '法令本文XMLを取得できませんでした（' +
-           'law_data(xml): ' + (xmlResult.error || xmlResult.status) + ' / ' +
-           'law_file(xml): ' + (fileResult.error || fileResult.status) + '）'
+    ok: false, raw: null, tree: null, format: '', extension: '',
+    source: 'none', url: xmlUrl, meta: null,
+    error: '法令本文を取得できませんでした（' + attempts.join(' / ') + '）'
   };
 }
 
@@ -2888,6 +2961,95 @@ function getTrimmedText(node) {
     .trim();
 }
 
+/**
+ * e-Gov の法令本文JSON表現を、本ファイルの木構造（LawNode）へ変換する。
+ *
+ * 背景
+ * ----
+ * 法令API v2 は law_full_text_format=json を指定すると、法令本文を
+ * XMLと同じ構造のJSONとして返す。その形は次のとおりで、
+ * 本ファイルが生成する LawNode とキー名が違うだけである。
+ *
+ *   { "tag": "Article", "attr": { "Num": "1" }, "children": [ ... ] }
+ *      tag      → LawNode.name
+ *      attr     → LawNode.attrs
+ *      children → LawNode.children（入れ子のノード、または本文の文字列）
+ *
+ * この変換により、XMLで取得できた場合と同じ処理
+ * （Markdown変換・構造化JSON生成）をそのまま流用できる。
+ *
+ * 注意: これは表現形式の相互変換であり、本文の加工ではない。
+ * 文字列は一切書き換えない。
+ *
+ * @param {(!Object|string)} jsonNode e-Gov のJSONノード
+ * @return {(!LawNode|string)} 変換後のノード
+ * @throws {Error} 変換できない形式の場合
+ */
+function convertJsonToLawNode(jsonNode) {
+  if (typeof jsonNode === 'string') {
+    return jsonNode;
+  }
+  if (!jsonNode || typeof jsonNode !== 'object') {
+    throw new Error('法令本文JSONの形式が想定と異なります');
+  }
+
+  // tag / name のどちらで来ても扱えるようにする
+  var name = jsonNode.tag || jsonNode.name || jsonNode.Tag;
+  if (!name) {
+    throw new Error('法令本文JSONに要素名（tag）がありません');
+  }
+
+  var sourceAttrs = jsonNode.attr || jsonNode.attrs || jsonNode.Attr || {};
+  var attrs = {};
+  Object.keys(sourceAttrs).forEach(function (key) {
+    var value = sourceAttrs[key];
+    if (value !== null && value !== undefined) {
+      attrs[key] = String(value);
+    }
+  });
+
+  var children = [];
+  var sourceChildren = jsonNode.children || jsonNode.Children || [];
+  if (Array.isArray(sourceChildren)) {
+    sourceChildren.forEach(function (child) {
+      if (child === null || child === undefined) {
+        return;
+      }
+      if (typeof child === 'string') {
+        // 要素間の空白のみの文字列は、XML解析時と同様に無視する
+        if (!/^[\s　]*$/.test(child)) {
+          children.push(child);
+        }
+        return;
+      }
+      children.push(convertJsonToLawNode(child));
+    });
+  } else if (typeof sourceChildren === 'string') {
+    children.push(sourceChildren);
+  }
+
+  return { name: name, attrs: attrs, children: children };
+}
+
+/**
+ * 取得した法令本文を、形式を問わず木構造（LawNode）へ変換する。
+ *
+ * @param {(string|!Object)} content 本文（XML文字列、またはJSONノード）
+ * @param {string} format 'xml' または 'json'
+ * @return {!LawNode} ルート要素のノード
+ * @throws {Error} 解析できない場合
+ */
+function parseLawContent(content, format) {
+  if (format === 'json') {
+    var node = convertJsonToLawNode(content);
+    if (typeof node === 'string') {
+      throw new Error('法令本文JSONのルートが要素ではありません');
+    }
+    return node;
+  }
+  return parseLawXml(String(content));
+}
+
 // ===========================================================================
 // 10_markdown_converter.gs
 // ===========================================================================
@@ -2953,7 +3115,19 @@ var SUBITEM_LEVELS = (function () {
  * @throws {Error} XMLが解析できない場合
  */
 function convertLawXmlToMarkdown(xmlText, meta) {
-  var root = parseLawXml(xmlText);
+  return convertLawToMarkdown(parseLawXml(xmlText), meta);
+}
+
+/**
+ * 解析済みの法令木構造をMarkdownへ変換する。
+ *
+ * 取得形式がXMLでもJSONでも、木構造へ変換したあとは同じ処理を通る。
+ *
+ * @param {!LawNode} root 法令のルートノード
+ * @param {!Object} meta メタデータ（YAML Front Matterに書き出す内容）
+ * @return {{markdown: string, lawTitle: string, lawNum: string, warnings: !Array<string>}}
+ */
+function convertLawToMarkdown(root, meta) {
   var warnings = [];
 
   if (root.attrs && root.attrs.__unclosed) {
@@ -3594,7 +3768,20 @@ function repeat_(text, count) {
  *           unit_count: number, units: !Array<!Object>}}
  */
 function buildStructuredJson(xmlText, meta) {
-  var root = parseLawXml(xmlText);
+  return buildStructuredJsonFromTree(parseLawXml(xmlText), meta);
+}
+
+/**
+ * 解析済みの法令木構造から構造化JSONを生成する。
+ *
+ * 取得形式がXMLでもJSONでも、木構造へ変換したあとは同じ処理を通る。
+ *
+ * @param {!LawNode} root 法令のルートノード
+ * @param {!Object} meta メタデータ（law_id / law_name を含む）
+ * @return {{law_id: string, law_name: string, generated_at: string,
+ *           unit_count: number, units: !Array<!Object>}}
+ */
+function buildStructuredJsonFromTree(root, meta) {
   var info = meta || {};
   var lawTitleNode = findDescendant(root, 'LawTitle');
   var lawName = info.law_name || (lawTitleNode ? getTrimmedText(lawTitleNode) : '');
@@ -4586,7 +4773,7 @@ function writeDriveReadme(driveService, state) {
     '| `' + CONFIG.CATEGORIES.social_insurance.folderName + '` | 社会保険のMarkdown |',
     '| `' + CONFIG.CATEGORIES.labor_insurance.folderName + '` | 労働保険のMarkdown |',
     '| `' + CONFIG.CATEGORIES.related.folderName + '` | 関連法令のMarkdown |',
-    '| `' + CONFIG.FOLDERS.RAW_XML + '` | **原本XML**（加工していないe-Govデータ） |',
+    '| `' + CONFIG.FOLDERS.RAW_XML + '` | **原本**（加工していないe-Govデータ。.xml または .json） |',
     '| `' + CONFIG.FOLDERS.SYSTEM_LOG + '` | 実行ログ |',
     '',
     '各カテゴリの `' + CONFIG.FOLDERS.HISTORY + '` には、改正前のファイルが退避されます。',
@@ -4594,10 +4781,10 @@ function writeDriveReadme(driveService, state) {
     '',
     '## 原本データと加工データの区別',
     '',
-    '- **原本**：`' + CONFIG.FOLDERS.RAW_XML + '` 配下のXML。e-Govから取得したまま。',
-    '- **加工**：各カテゴリのMarkdown・構造化JSON。原本XMLから機械的に変換したもの。',
+    '- **原本**：`' + CONFIG.FOLDERS.RAW_XML + '` 配下のファイル。e-Govから取得したまま。',
+    '- **加工**：各カテゴリのMarkdown・構造化JSON。原本から機械的に変換したもの。',
     '',
-    '条文の正確性が問題になる場合は、必ず原本XMLまたはe-Gov公式サイトを確認してください。',
+    '条文の正確性が問題になる場合は、必ず原本またはe-Gov公式サイトを確認してください。',
     '',
     '## ステータスの意味',
     '',
@@ -5141,26 +5328,19 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   var lawInfo = resolution.lawInfo;
   var identifier = lawInfo.law_id || lawInfo.law_num;
 
-  // --- 2. 本文XMLを取得する ---
-  var fetched = fetchLawXml(identifier, logger);
+  // --- 2. 本文を取得する（XMLを優先し、得られなければJSON） ---
+  var fetched = fetchLawContent(identifier, logger);
   if (!fetched.ok) {
     return { status: 'failed', reason: fetched.error, record: null, plan: null };
   }
 
-  // --- 3. XMLを検証する（保存前に壊れたデータを弾く） ---
-  var parsedRoot;
-  try {
-    parsedRoot = parseLawXml(fetched.xml);
-  } catch (e) {
+  // --- 3. 内容を検証する（保存前に壊れたデータを弾く） ---
+  var parsedRoot = fetched.tree;
+  if (!parsedRoot || parsedRoot.name !== 'Law') {
     return {
       status: 'failed', record: null, plan: null,
-      reason: 'XML解析エラー: ' + describeError(e)
-    };
-  }
-  if (parsedRoot.name !== 'Law') {
-    return {
-      status: 'failed', record: null, plan: null,
-      reason: '取得したXMLのルート要素が Law ではありません（実際: ' + parsedRoot.name + '）'
+      reason: '取得した本文のルート要素が Law ではありません（実際: ' +
+              (parsedRoot ? parsedRoot.name : 'なし') + '）'
     };
   }
 
@@ -5175,7 +5355,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   }
 
   // --- 4. ハッシュで差分を判定する ---
-  var newHash = computeLawHash(fetched.xml);
+  var newHash = computeLawHash(fetched.raw);
   var previous = findStateRecord(state, lawConfig, lawInfo.law_id);
   var isUnchanged = previous && isSameHash(previous.last_hash, newHash);
 
@@ -5207,7 +5387,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   // --- 6. Markdownと構造化JSONを生成する ---
   var lawTypeKey = decideLawTypeKey(lawInfo, lawConfig);
   var meta = buildLawMetadata(lawConfig, lawInfo, lawTypeKey, status, fetched.url);
-  var converted = convertLawXmlToMarkdown(fetched.xml, meta);
+  var converted = convertLawToMarkdown(parsedRoot, meta);
 
   converted.warnings.forEach(function (warning) {
     logger.warn('Markdown変換の警告: ' + warning, { law_name: lawInfo.law_title });
@@ -5216,14 +5396,27 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   // --- 7. 旧データを履歴へ退避する ---
   var baseName = sanitizeFileName(lawInfo.law_title || lawConfig.name);
   if (previous && CONFIG.SYNC.KEEP_HISTORY) {
-    archivePrevious_(previous, baseName, lawConfig, driveService, logger);
+    archivePrevious_(previous, baseName, lawConfig, driveService, logger,
+      previous.raw_file_name ? previous.raw_file_name.split('.').pop() : 'xml');
   }
 
-  // --- 8. 原本XMLを保存する（加工しない） ---
+  // --- 8. 原本を保存する（加工しない） ---
+  // 取得形式がXMLなら .xml、JSONなら .json として保存する。
+  // どちらの場合も、e-Govが返した内容をそのまま保存する。
   var rawFolder = driveService.getRawXmlFolder(lawConfig.category);
+  var rawFileName = baseName + '.' + fetched.extension;
+  var previousRawName = previous && previous.raw_file_name ? previous.raw_file_name : null;
+
+  // 前回と形式が変わった場合、古い形式のファイルIDは使えないため作り直す
+  var reusableRawId = (previousRawName === null || previousRawName === rawFileName)
+    ? (previous ? previous.xml_file_id : null)
+    : null;
+
   var xmlResult = driveService.upsertTextFile(
-    rawFolder, baseName + '.xml', fetched.xml,
-    previous ? previous.xml_file_id : null, MimeType.PLAIN_TEXT);
+    rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+
+  // 台帳へ記録するため、実際に使ったファイル名を取得結果へ持たせる
+  fetched.rawFileName = rawFileName;
 
   // --- 9. Markdownを保存する ---
   var mdFolder = driveService.getMarkdownFolder(lawConfig.category, lawTypeKey);
@@ -5235,7 +5428,7 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
   var structuredFileId = previous ? previous.structured_file_id : null;
   if (CONFIG.SYNC.GENERATE_STRUCTURED_JSON) {
     try {
-      var structured = buildStructuredJson(fetched.xml, meta);
+      var structured = buildStructuredJsonFromTree(parsedRoot, meta);
       var structuredFolder = driveService.getStructuredFolder(lawConfig.category);
       structuredFileId = driveService.upsertTextFile(
         structuredFolder, baseName + '.json', toPrettyJson(structured),
@@ -5305,7 +5498,7 @@ function enrichLawInfoFromXml_(lawInfo, root) {
  * @param {!Logger_} logger ロガー
  * @private
  */
-function archivePrevious_(previous, baseName, lawConfig, driveService, logger) {
+function archivePrevious_(previous, baseName, lawConfig, driveService, logger, rawExt) {
   try {
     var historyFolder = driveService.getHistoryFolder(lawConfig.category);
     var archivedAt = new Date();
@@ -5317,11 +5510,11 @@ function archivePrevious_(previous, baseName, lawConfig, driveService, logger) {
         historyFolder, baseName, 'md', oldMarkdown, archivedAt);
     }
 
-    var oldXml = previous.xml_file_id
+    var oldRaw = previous.xml_file_id
       ? driveService.readFileById(previous.xml_file_id) : null;
-    if (oldXml) {
+    if (oldRaw) {
       driveService.archiveToHistory(
-        historyFolder, baseName, 'xml', oldXml, archivedAt);
+        historyFolder, baseName, rawExt || 'xml', oldRaw, archivedAt);
     }
   } catch (e) {
     // 履歴退避の失敗で本体の更新を止めない
@@ -5377,6 +5570,8 @@ function buildStateRecord_(
     api_source_url: fetched.url,
     fetch_source: fetched.source,
     xml_file_id: xmlFileId,
+    raw_format: fetched.format,
+    raw_file_name: fetched.rawFileName || '',
     markdown_file_id: markdownFileId,
     structured_file_id: structuredFileId || '',
     last_hash: hash,
@@ -6041,6 +6236,8 @@ function runAllTests() {
   test_カテゴリ単位の同期();
   test_長期間未同期時のフォールバック();
   test_廃止法令のステータス記録();
+  test_本文がJSON形式で返る場合();
+  test_XMLとJSONで同じ結果になること();
 
   return summarizeTests_();
 }
@@ -6068,12 +6265,13 @@ function test_設定ファイルの検証() {
 /** URL組み立てが仕様マップどおりに行われること。 */
 function test_APIのURL組み立て() {
   runTest_('APIのURL組み立て', function () {
+    var contentParams = {};
+    contentParams[EGOV_API_SPEC.PARAMS.LAW_FULL_TEXT_FORMAT] = EGOV_API_SPEC.FORMATS.XML;
     var url = buildEgovUrl('LAW_DATA',
-      { lawIdOrNumOrRevisionId: '340AC0000000033' },
-      { response_format: 'xml' });
+      { lawIdOrNumOrRevisionId: '340AC0000000033' }, contentParams);
     assertEquals_(
-      EGOV_API_SPEC.BASE_URL + '/law_data/340AC0000000033?response_format=xml',
-      url, 'law_data のURLが正しい');
+      EGOV_API_SPEC.BASE_URL + '/law_data/340AC0000000033?law_full_text_format=xml',
+      url, 'law_data のURLが正しい（law_full_text_format を使う）');
 
     // パスパラメータ不足は例外になる
     assertThrows_(function () {
@@ -6893,9 +7091,24 @@ function stubEgovApi_(lawsByName, options) {
         return errorResult_(url, 404, '法令が見つかりません（テスト）');
       }
       var def = lawsByName[matchedName];
+      var xml = getTestLawXml_(matchedName, def.lawNum, def.extraSentence);
+
+      // JSONモード: XMLを返さず、e-Gov v2 と同じ形のJSONを返す
+      if (opts.jsonOnly) {
+        if (url.indexOf('law_full_text_format=xml') !== -1 ||
+            url.indexOf('/law_file/') !== -1) {
+          return errorResult_(url, 406, 'XML形式は利用できません（テスト）');
+        }
+        return okJson_(url, {
+          law_info: { law_id: def.lawId, law_num: def.lawNum, law_type: 'Act' },
+          revision_info: { law_title: matchedName },
+          law_full_text: lawNodeToEgovJson_(parseLawXml(xml))
+        });
+      }
+
       return {
         ok: true, status: 200, url: url, attempts: 1, error: null,
-        body: getTestLawXml_(matchedName, def.lawNum, def.extraSentence)
+        body: xml
       };
     }
 
@@ -7287,4 +7500,92 @@ function summarizeTests_() {
   return {
     total: testResults_.length, passed: passed, failed: failed, results: testResults_
   };
+}
+
+/**
+ * 内部の木構造を、e-Gov の法令本文JSON表現へ変換する（テスト用）。
+ * 実際のAPIが返す { tag, attr, children } の形を再現する。
+ *
+ * @param {(!Object|string)} node 木構造のノード
+ * @return {(!Object|string)} JSON表現
+ * @private
+ */
+function lawNodeToEgovJson_(node) {
+  if (typeof node === 'string') {
+    return node;
+  }
+  return {
+    tag: node.name,
+    attr: node.attrs,
+    children: node.children.map(lawNodeToEgovJson_)
+  };
+}
+
+/** 本文がJSON形式で返る場合でも、保存まで完了すること。 */
+function test_本文がJSON形式で返る場合() {
+  runTest_('本文がJSON形式で返る場合', function () {
+    withTestContext_(function (ctx) {
+      stubEgovApi_({
+        '所得税法': { lawId: '340AC0000000033', lawNum: '昭和四十年法律第三十三号' }
+      }, { jsonOnly: true });
+
+      var summary = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+
+      assertEquals_(0, summary.failed_count, 'JSON形式でも失敗しない');
+      assertEquals_(1, summary.updated_count, 'JSON形式でも保存される');
+
+      // 原本は .json として無加工で保存されること
+      var rawFolder = ctx.driveService.getRawXmlFolder('tax');
+      var rawJson = ctx.driveService.readTextFile(rawFolder, '所得税法.json');
+      assertTrue_(!!rawJson, '原本が .json として保存される');
+      assertTrue_(!ctx.driveService.readTextFile(rawFolder, '所得税法.xml'),
+        'XMLは作られない（疑似XMLを生成しない）');
+
+      var parsed = safeJsonParse(rawJson, null);
+      assertTrue_(!!parsed && !!parsed.law_full_text,
+        '原本はe-Govのレスポンスそのままである');
+      assertEquals_('Law', parsed.law_full_text.tag,
+        '原本の構造が改変されていない');
+
+      // Markdownは通常どおり生成されること
+      var mdFolder = ctx.driveService.getMarkdownFolder('tax', 'act');
+      var md = ctx.driveService.readTextFile(mdFolder, '所得税法.md');
+      assertTrue_(!!md, 'Markdownが生成される');
+      assertTrue_(md.indexOf('#### 第一条') !== -1, '条の構造が保持される');
+      assertTrue_(md.indexOf('一　国内') !== -1, '号が保持される');
+
+      // 台帳に取得形式が記録されること
+      var state = loadSyncState(ctx.driveService);
+      var record = state.laws['340AC0000000033'];
+      assertEquals_('json', record.raw_format, '取得形式が記録される');
+      assertEquals_('所得税法.json', record.raw_file_name, '原本のファイル名が記録される');
+
+      // 2回目は変更なしと判定されること
+      var second = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+      assertEquals_(1, second.unchanged_count, 'JSON形式でも差分検出が働く');
+    });
+  });
+}
+
+/** XMLで取得した場合とJSONで取得した場合で、生成物が一致すること。 */
+function test_XMLとJSONで同じ結果になること() {
+  runTest_('XMLとJSONで同じ結果になること', function () {
+    var xml = getTestLawXml_('所得税法', '昭和四十年法律第三十三号');
+    var fromXml = parseLawXml(xml);
+    var fromJson = parseLawContent(lawNodeToEgovJson_(fromXml), 'json');
+
+    assertEquals_(JSON.stringify(fromXml), JSON.stringify(fromJson),
+      'XMLとJSONから同じ木構造が得られる');
+
+    var meta = { law_name: '所得税法', law_id: '340AC0000000033' };
+    assertEquals_(
+      convertLawToMarkdown(fromXml, meta).markdown,
+      convertLawToMarkdown(fromJson, meta).markdown,
+      '生成されるMarkdownが完全に一致する');
+
+    assertEquals_(
+      buildStructuredJsonFromTree(fromXml, meta).unit_count,
+      buildStructuredJsonFromTree(fromJson, meta).unit_count,
+      '構造化JSONの条文単位数が一致する');
+  });
 }

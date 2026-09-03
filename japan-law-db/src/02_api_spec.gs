@@ -10,11 +10,29 @@
  *
  * 重要（必ず読むこと）
  * --------------------
- * ここに書かれたパス・パラメータ名は「暫定値」である。
  * 実運用前に必ず {@link verifyApiSpec} を実行し、
  * 公式OpenAPI仕様（https://laws.e-gov.go.jp/api/2/swagger-ui/）と
  * 突き合わせて差異がないことを確認すること。
  * 差異があった場合は、コード本体ではなく **このファイルの値を修正** すれば動く。
+ *
+ * 確認状況（2026-09-03時点）
+ * --------------------------
+ * 実装環境から laws.e-gov.go.jp へ到達できなかったため、公式仕様書は未確認。
+ * ただし、実際に稼働している公開クライアント実装
+ * （npm: @gonuts555/e-gov-mcp, law-mcp-server）のソースコードを照合し、
+ * 以下を確認済みとした。
+ *
+ *   - ベースURL          : https://laws.e-gov.go.jp/api/2
+ *   - GET /laws          : law_title / law_num / law_type / limit
+ *                          （law_title は「部分一致」で検索される）
+ *   - GET /law_data/{id} : law_full_text_format / asof / revision
+ *   - GET /keyword       : keyword
+ *   - レスポンス構造     : { laws: [ { law_info: {...}, revision_info: {...} } ] }
+ *                          { law_info, revision_info, law_full_text }
+ *   - 本文のJSON表現     : { tag, attr, children } の入れ子。文字列は本文テキスト
+ *
+ * 特に注意：本文形式の指定は response_format ではなく
+ * **law_full_text_format** である。
  *
  * レスポンス項目名については、単一の名前を決め打ちせず
  * FIELD_CANDIDATES に「あり得る名前の候補配列」を持たせ、
@@ -65,7 +83,7 @@ var EGOV_API_SPEC = {
     LAW_DATA: {
       path: '/law_data/{lawIdOrNumOrRevisionId}',
       method: 'get',
-      note: '法令本文取得。response_format で json / xml を切り替える想定。'
+      note: '法令本文取得。law_full_text_format で json / xml を切り替える。'
     },
     /** 法令履歴一覧取得 */
     LAW_REVISIONS: {
@@ -99,14 +117,27 @@ var EGOV_API_SPEC = {
    * @type {!Object<string, string>}
    */
   PARAMS: {
-    RESPONSE_FORMAT: 'response_format',
-    LAW_TYPE: 'law_type',
-    LAW_NUM: 'law_num',
+    // --- 実際に稼働しているクライアント実装で確認済みのパラメータ ---
+    /** 法令本文の形式。'json' / 'xml'。※ response_format ではない点に注意 */
+    LAW_FULL_TEXT_FORMAT: 'law_full_text_format',
+    /** 法令名（部分一致で検索される。完全一致は呼び出し側で絞り込むこと） */
     LAW_TITLE: 'law_title',
-    LAW_TITLE_KANA: 'law_title_kana',
-    KEYWORD: 'keyword',
-    ASOF: 'asof',
+    /** 法令番号 */
+    LAW_NUM: 'law_num',
+    /** 法令種別 */
+    LAW_TYPE: 'law_type',
+    /** 取得件数の上限 */
     LIMIT: 'limit',
+    /** キーワード検索の検索語 */
+    KEYWORD: 'keyword',
+    /** 時点指定（YYYY-MM-DD）。その日時点で有効な法令を取得する */
+    ASOF: 'asof',
+    /** 改正版の指定（YYYY-MM-DD） */
+    REVISION: 'revision',
+
+    // --- 未確認のパラメータ（verifyApiSpec() で確認すること） ---
+    RESPONSE_FORMAT: 'response_format',
+    LAW_TITLE_KANA: 'law_title_kana',
     OFFSET: 'offset',
     CATEGORY_CD: 'category_cd',
     PROMULGATION_DATE_FROM: 'promulgation_date_from',
@@ -119,7 +150,7 @@ var EGOV_API_SPEC = {
     SENTENCE_TEXT_SIZE: 'sentence_text_size'
   },
 
-  /** response_format パラメータに渡す値 */
+  /** 本文形式パラメータ（law_full_text_format）に渡す値 */
   FORMATS: {
     JSON: 'json',
     XML: 'xml'
