@@ -2357,6 +2357,191 @@ function printSpecReport_(report) {
   console.log('=========================================');
 }
 
+/**
+ * 実際にAPIを呼び出して、設定が正しいかを確かめる。
+ *
+ * verifyApiSpec() は公式のOpenAPI仕様書と突き合わせるが、
+ * 仕様書のURLが不明な場合は確認できない。
+ * 本関数は仕様書に頼らず、**実際のAPIを数回だけ呼び出して**
+ * 応答の中身から設定の正しさを判定する。
+ *
+ * 公的APIへの負荷を避けるため、呼び出しは3回までに抑えている。
+ *
+ * @param {string=} lawName 確認に使う法令名（既定: '所得税法'）
+ * @return {{ok: boolean, steps: !Array<!Object>, lawId: string, contentFormat: string}}
+ */
+function probeApiSpec(lawName) {
+  var logger = createLogger('probe_api');
+  var target = lawName || '所得税法';
+  var steps = [];
+  var lawId = '';
+  var contentFormat = '';
+
+  console.log('========== API 実接続テスト ==========');
+  console.log('確認に使う法令: ' + target);
+  console.log('');
+
+  // --- 1. 法令一覧APIで検索できるか ---
+  var searchParams = {};
+  searchParams[EGOV_API_SPEC.PARAMS.LAW_TITLE] = target;
+  searchParams[EGOV_API_SPEC.PARAMS.LIMIT] = 3;
+  var searchUrl = buildEgovUrl('LAWS', {}, searchParams);
+
+  console.log('[1] 法令検索');
+  console.log('    ' + searchUrl);
+  var searchResult = apiGet_(searchUrl, logger, true);
+
+  if (!searchResult.ok) {
+    console.log('    結果: 失敗 — ' + (searchResult.error || 'HTTP ' + searchResult.status));
+    console.log('');
+    console.log('    → /laws のパスかパラメータ名が違う可能性があります。');
+    steps.push({ step: 'search', ok: false, detail: searchResult.error });
+    printProbeVerdict_(steps);
+    return { ok: false, steps: steps, lawId: '', contentFormat: '' };
+  }
+
+  var candidates = pickLawList(searchResult.data);
+  console.log('    結果: 成功（候補 ' + candidates.length + ' 件）');
+
+  if (candidates.length === 0) {
+    console.log('    → 通信はできましたが、法令一覧を取り出せませんでした。');
+    console.log('      レスポンスの先頭: ' + searchResult.body.substring(0, 300));
+    steps.push({ step: 'search', ok: false, detail: '一覧を取り出せない' });
+    printProbeVerdict_(steps);
+    return { ok: false, steps: steps, lawId: '', contentFormat: '' };
+  }
+
+  var info = readLawInfo(candidates[0]);
+  lawId = info.law_id;
+  console.log('    法令名  : ' + (info.law_title || '(読み取れず)'));
+  console.log('    法令番号: ' + (info.law_num || '(読み取れず)'));
+  console.log('    法令ID  : ' + (info.law_id || '(読み取れず)'));
+  console.log('    法令種別: ' + (info.law_type_raw || '(読み取れず)'));
+
+  var fieldsOk = !!(info.law_id && info.law_title);
+  if (!fieldsOk) {
+    console.log('    → 項目名が想定と異なります。レスポンスの先頭を確認してください:');
+    console.log('      ' + searchResult.body.substring(0, 400));
+  }
+  steps.push({ step: 'search', ok: fieldsOk, detail: info.law_title });
+  console.log('');
+
+  if (!lawId) {
+    printProbeVerdict_(steps);
+    return { ok: false, steps: steps, lawId: '', contentFormat: '' };
+  }
+
+  // --- 2. 本文をXML形式で取得できるか ---
+  var xmlParams = {};
+  xmlParams[EGOV_API_SPEC.PARAMS.LAW_FULL_TEXT_FORMAT] = EGOV_API_SPEC.FORMATS.XML;
+  var xmlUrl = buildEgovUrl('LAW_DATA', { lawIdOrNumOrRevisionId: lawId }, xmlParams);
+
+  console.log('[2] 本文取得（XML形式）');
+  console.log('    ' + xmlUrl);
+  var xmlResult = apiGet_(xmlUrl, logger, false);
+  var xmlOk = xmlResult.ok && looksLikeLawXml_(xmlResult.body);
+  console.log('    結果: ' + (xmlOk ? '成功（XMLで取得できます）'
+    : '取得できず — ' + (xmlResult.error || 'HTTP ' + xmlResult.status)));
+  if (xmlOk) {
+    contentFormat = 'xml';
+  }
+  steps.push({ step: 'content_xml', ok: xmlOk, detail: xmlResult.status });
+  console.log('');
+
+  // --- 3. 本文をJSON形式で取得できるか（XMLが駄目だった場合のみ） ---
+  if (!xmlOk) {
+    var jsonParams = {};
+    jsonParams[EGOV_API_SPEC.PARAMS.LAW_FULL_TEXT_FORMAT] = EGOV_API_SPEC.FORMATS.JSON;
+    var jsonUrl = buildEgovUrl('LAW_DATA', { lawIdOrNumOrRevisionId: lawId }, jsonParams);
+
+    console.log('[3] 本文取得（JSON形式）');
+    console.log('    ' + jsonUrl);
+    var jsonResult = apiGet_(jsonUrl, logger, true);
+
+    var jsonOk = false;
+    if (jsonResult.ok) {
+      var fullText = pickField(
+        jsonResult.data, EGOV_API_SPEC.FIELD_CANDIDATES.LAW_FULL_TEXT, null);
+      if (fullText && typeof fullText === 'object') {
+        try {
+          var tree = parseLawContent(fullText, 'json');
+          jsonOk = (tree.name === 'Law');
+          contentFormat = 'json';
+          console.log('    結果: 成功（JSONで取得できます。原本はJSONのまま保存します）');
+        } catch (e) {
+          console.log('    結果: 本文の構造を解釈できませんでした — ' + describeError(e));
+        }
+      } else if (typeof fullText === 'string') {
+        jsonOk = looksLikeLawXml_(fullText);
+        contentFormat = jsonOk ? 'xml' : '';
+        console.log('    結果: ' + (jsonOk ? '成功（JSONの中にXMLが入っています）'
+          : '本文が想定の形式ではありません'));
+      } else {
+        console.log('    結果: 本文の項目が見つかりません');
+        console.log('      レスポンスの先頭: ' + jsonResult.body.substring(0, 400));
+      }
+    } else {
+      console.log('    結果: 失敗 — ' + (jsonResult.error || 'HTTP ' + jsonResult.status));
+    }
+    steps.push({ step: 'content_json', ok: jsonOk, detail: contentFormat });
+    console.log('');
+  }
+
+  printProbeVerdict_(steps);
+  // XML取得の失敗は「JSONで取得できれば問題なし」であるため、
+  // 全段階の成否ではなく「検索できたか」「本文を取得できたか」で判定する
+  return {
+    ok: isProbeSuccessful_(steps),
+    steps: steps, lawId: lawId, contentFormat: contentFormat
+  };
+}
+
+/**
+ * 実接続テストが成功と言えるかを判定する。
+ *
+ * 本文はXMLとJSONのどちらか一方で取得できれば十分であり、
+ * XML取得の失敗だけを理由に失敗とはしない。
+ *
+ * @param {!Array<!Object>} steps 各段階の結果
+ * @return {boolean} 成功なら true
+ * @private
+ */
+function isProbeSuccessful_(steps) {
+  var searchOk = steps.some(function (s) { return s.step === 'search' && s.ok; });
+  var contentOk = steps.some(function (s) {
+    return (s.step === 'content_xml' || s.step === 'content_json') && s.ok;
+  });
+  return searchOk && contentOk;
+}
+
+/**
+ * 実接続テストの判定を表示する。
+ * @param {!Array<!Object>} steps 各段階の結果
+ * @private
+ */
+function printProbeVerdict_(steps) {
+  var searchOk = steps.some(function (s) { return s.step === 'search' && s.ok; });
+  var contentOk = steps.some(function (s) {
+    return (s.step === 'content_xml' || s.step === 'content_json') && s.ok;
+  });
+
+  console.log('========== 判定 ==========');
+  if (isProbeSuccessful_(steps)) {
+    console.log('✅ 問題ありません。setup() を実行してください。');
+    console.log('   法令の検索・本文の取得ともに成功しました。');
+    setProp(CONFIG.PROPERTY_KEYS.API_SPEC_VERIFIED_AT, nowIso());
+  } else if (!searchOk) {
+    console.log('❌ 法令の検索に失敗しました。');
+    console.log('   02_api_spec.gs の ENDPOINTS.LAWS と PARAMS.LAW_TITLE を');
+    console.log('   確認してください。');
+  } else {
+    console.log('❌ 法令は検索できましたが、本文を取得できませんでした。');
+    console.log('   02_api_spec.gs の ENDPOINTS.LAW_DATA と');
+    console.log('   PARAMS.LAW_FULL_TEXT_FORMAT を確認してください。');
+  }
+  console.log('==========================');
+}
+
 // ===========================================================================
 // 08_response_reader.gs
 // ===========================================================================
