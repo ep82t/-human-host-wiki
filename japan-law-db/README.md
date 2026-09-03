@@ -97,7 +97,7 @@ Google Drive の専用フォルダへ整理して保存する Google Apps Script
 `dist/` に、全ソースを1つに結合した配布用ファイルを用意しています。
 
 1. `dist/appsscript.json` を `appsscript.json` へ貼り付ける（→ 3-1・3-2）
-2. `dist/日本法令データベース.gs` を `コード.gs` へ貼り付ける
+2. `dist/japan-law-db.gs` を `コード.gs` へ貼り付ける
 
 これだけで完了です。手順の詳細は **[はじめかた.md](はじめかた.md)** をご覧ください。
 

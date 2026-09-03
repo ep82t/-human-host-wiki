@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * verify-bundle.js
- * 生成された dist/日本法令データベース.gs（結合済みの配布用ファイル）そのものを
+ * 生成された dist/japan-law-db.gs（結合済みの配布用ファイル）そのものを
  * GASスタブ環境で読み込み、テスト28件が通ることを確認する。
  *
  * 「分割版は動くが結合版は壊れている」という事態を防ぐための検証。
@@ -12,7 +12,7 @@ const path = require('path');
 const vm = require('vm');
 const { createGasEnvironment } = require('./gas-shim.js');
 
-const BUNDLE = path.join(__dirname, '..', 'dist', '日本法令データベース.gs');
+const BUNDLE = path.join(__dirname, '..', 'dist', 'japan-law-db.gs');
 if (!fs.existsSync(BUNDLE)) {
   console.error('先に node build-single-file.js を実行してください。');
   process.exit(1);

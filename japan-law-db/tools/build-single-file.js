@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * build-single-file.js
- * src/*.gs を1つのファイルへ結合し、dist/日本法令データベース.gs を生成する。
+ * src/*.gs を1つのファイルへ結合し、dist/japan-law-db.gs を生成する。
  *
  * 目的
  * ----
@@ -20,7 +20,7 @@ const path = require('path');
 
 const SRC_DIR = path.join(__dirname, '..', 'src');
 const DIST_DIR = path.join(__dirname, '..', 'dist');
-const OUT_FILE = path.join(DIST_DIR, '日本法令データベース.gs');
+const OUT_FILE = path.join(DIST_DIR, 'japan-law-db.gs');
 
 const files = fs.readdirSync(SRC_DIR).filter(f => f.endsWith('.gs')).sort();
 
@@ -79,7 +79,7 @@ fs.copyFileSync(
 
 const stat = fs.statSync(OUT_FILE);
 const lines = fs.readFileSync(OUT_FILE, 'utf8').split('\n').length;
-console.log(`生成しました: dist/日本法令データベース.gs`);
+console.log(`生成しました: dist/japan-law-db.gs`);
 console.log(`  結合ファイル数: ${files.length}`);
 console.log(`  行数          : ${lines.toLocaleString()}`);
 console.log(`  サイズ        : ${(stat.size / 1024).toFixed(1)} KB`);
