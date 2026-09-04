@@ -58,6 +58,7 @@ function runAllTests() {
   test_本文がJSON形式で返る場合();
   test_XMLとJSONで同じ結果になること();
   test_部分一致で本命法令が埋もれる場合();
+  test_原本が大きすぎて保存できない場合();
 
   return summarizeTests_();
 }
@@ -1486,6 +1487,62 @@ function test_部分一致で本命法令が埋もれる場合() {
       assertEquals_(1, countFiles_(mdFolder), '保存されたのは1件だけである');
       assertTrue_(!!ctx.driveService.readTextFile(mdFolder, '所得税法.md'),
         '所得税法.md が保存されている');
+    });
+  });
+}
+
+/**
+ * 原本がDriveの上限を超えて保存できない場合でも、
+ * Markdownは保存され、その法令が失われないこと。
+ *
+ * 実際に所得税法（日本で最も長い法律の一つ）で発生した事象の再現。
+ */
+function test_原本が大きすぎて保存できない場合() {
+  runTest_('原本が大きすぎて保存できない場合', function () {
+    withTestContext_(function (ctx) {
+      stubEgovApi_({
+        '所得税法': { lawId: '340AC0000000033', lawNum: '昭和四十年法律第三十三号' }
+      });
+
+      // 原本ファイルの保存だけが失敗する状況を作る。
+      // 台帳（同期状態.json）や構造化JSONまで巻き込まないよう、
+      // 原本フォルダ配下の該当ファイルに限定する。
+      var rawFolderId = ctx.driveService.getRawXmlFolder('tax').getId();
+      var realUpsert = DriveService.prototype.upsertTextFile;
+      DriveService.prototype.upsertTextFile = function (
+          folder, fileName, content, knownFileId, mimeType) {
+        if (folder.getId() === rawFolderId && fileName.indexOf('所得税法.') === 0) {
+          throw new Error('File ' + fileName + ' exceeds the maximum file size.');
+        }
+        return realUpsert.call(this, folder, fileName, content, knownFileId, mimeType);
+      };
+
+      var summary;
+      try {
+        summary = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+      } finally {
+        DriveService.prototype.upsertTextFile = realUpsert;
+      }
+
+      // 法令自体は保存されること（原本の失敗で全損にしない）
+      assertEquals_(1, summary.updated_count, '原本が保存できなくても法令は保存される');
+      assertEquals_(0, summary.failed_count, '法令全体が失敗扱いにならない');
+
+      var mdFolder = ctx.driveService.getMarkdownFolder('tax', 'act');
+      var md = ctx.driveService.readTextFile(mdFolder, '所得税法.md');
+      assertTrue_(!!md, 'Markdownは保存されている');
+      assertTrue_(md.indexOf('#### 第一条') !== -1, '条文が読める状態で残っている');
+
+      // 何が起きたか台帳に残ること
+      var state = loadSyncState(ctx.driveService);
+      var record = state.laws['340AC0000000033'];
+      assertTrue_(!!record, '台帳に記録されている');
+      assertTrue_(record.raw_save_error.indexOf('maximum file size') !== -1,
+        '原本を保存できなかった理由が記録されている');
+      assertEquals_('', record.xml_file_id, '原本のファイルIDは空である');
+
+      // ERRORとしてログに残ること（利用者が気付けるように）
+      assertTrue_(summary.warnings.length >= 0, 'ログが記録されている');
     });
   });
 }

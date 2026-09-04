@@ -367,11 +367,28 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
     ? (previous ? previous.xml_file_id : null)
     : null;
 
-  var xmlResult = driveService.upsertTextFile(
-    rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+  // 原本の保存に失敗しても、Markdownの保存まで巻き添えにしない。
+  // 巨大な法令（所得税法など）はDriveの上限を超えることがあるが、
+  // その場合でも読める形（Markdown）は残すほうが利用者の利益になる。
+  var xmlResult = { fileId: '', created: false, recovered: false };
+  var rawSaveError = '';
+  try {
+    xmlResult = driveService.upsertTextFile(
+      rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+  } catch (e) {
+    rawSaveError = describeError(e);
+    logger.error(
+      '原本を保存できませんでした（Markdownの保存は継続します）', {
+        law_name: lawInfo.law_title,
+        file_name: rawFileName,
+        size_chars: fetched.raw ? fetched.raw.length : 0,
+        error: rawSaveError
+      });
+  }
 
-  // 台帳へ記録するため、実際に使ったファイル名を取得結果へ持たせる
-  fetched.rawFileName = rawFileName;
+  // 台帳へ記録するため、実際に使ったファイル名と結果を取得結果へ持たせる
+  fetched.rawFileName = rawSaveError ? '' : rawFileName;
+  fetched.rawSaveError = rawSaveError;
 
   // --- 9. Markdownを保存する ---
   var mdFolder = driveService.getMarkdownFolder(lawConfig.category, lawTypeKey);
@@ -527,6 +544,7 @@ function buildStateRecord_(
     xml_file_id: xmlFileId,
     raw_format: fetched.format,
     raw_file_name: fetched.rawFileName || '',
+    raw_save_error: fetched.rawSaveError || '',
     markdown_file_id: markdownFileId,
     structured_file_id: structuredFileId || '',
     last_hash: hash,

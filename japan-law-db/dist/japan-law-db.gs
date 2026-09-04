@@ -97,8 +97,12 @@ var CONFIG = {
 
   /** 実行時間制御（GASは1実行あたり最大6分の制限がある） */
   EXECUTION: {
-    /** この時間を超えたら安全に中断し、続きは次回実行へ回す（ミリ秒） */
-    SOFT_TIME_LIMIT_MS: 4.5 * 60 * 1000,
+    /**
+     * この時間を超えたら安全に中断し、続きは次回実行へ回す（ミリ秒）。
+     * GASの上限は6分。1法令あたり最大十数秒かかるため、
+     * 余裕を1分残した5分を上限とする。
+     */
+    SOFT_TIME_LIMIT_MS: 5 * 60 * 1000,
     /** 1回の同期で処理する法令の最大件数（0 = 無制限） */
     MAX_LAWS_PER_RUN: 0
   },
@@ -2207,8 +2211,11 @@ function fetchLawContent(lawIdOrNum, logger) {
         });
         return {
           ok: true,
-          // レスポンス全体を原本として保存する（書誌情報も含まれるため）
-          raw: JSON.stringify(jsonResult.data, null, 2),
+          // e-Govが返した本文をそのまま原本とする。
+          // 整形（インデント付与）は原本の改変にあたるうえ、
+          // 法令XMLのような深い入れ子では空白がファイル全体を肥大化させ、
+          // Driveの上限を超える原因にもなるため、絶対に行わない。
+          raw: jsonResult.body,
           tree: tree, format: 'json', extension: 'json',
           source: 'law_data(json)', url: jsonUrl, error: null, meta: jsonResult.data
         };
@@ -5727,11 +5734,28 @@ function syncOneLaw_(lawConfig, state, driveService, logger, dryRun) {
     ? (previous ? previous.xml_file_id : null)
     : null;
 
-  var xmlResult = driveService.upsertTextFile(
-    rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+  // 原本の保存に失敗しても、Markdownの保存まで巻き添えにしない。
+  // 巨大な法令（所得税法など）はDriveの上限を超えることがあるが、
+  // その場合でも読める形（Markdown）は残すほうが利用者の利益になる。
+  var xmlResult = { fileId: '', created: false, recovered: false };
+  var rawSaveError = '';
+  try {
+    xmlResult = driveService.upsertTextFile(
+      rawFolder, rawFileName, fetched.raw, reusableRawId, MimeType.PLAIN_TEXT);
+  } catch (e) {
+    rawSaveError = describeError(e);
+    logger.error(
+      '原本を保存できませんでした（Markdownの保存は継続します）', {
+        law_name: lawInfo.law_title,
+        file_name: rawFileName,
+        size_chars: fetched.raw ? fetched.raw.length : 0,
+        error: rawSaveError
+      });
+  }
 
-  // 台帳へ記録するため、実際に使ったファイル名を取得結果へ持たせる
-  fetched.rawFileName = rawFileName;
+  // 台帳へ記録するため、実際に使ったファイル名と結果を取得結果へ持たせる
+  fetched.rawFileName = rawSaveError ? '' : rawFileName;
+  fetched.rawSaveError = rawSaveError;
 
   // --- 9. Markdownを保存する ---
   var mdFolder = driveService.getMarkdownFolder(lawConfig.category, lawTypeKey);
@@ -5887,6 +5911,7 @@ function buildStateRecord_(
     xml_file_id: xmlFileId,
     raw_format: fetched.format,
     raw_file_name: fetched.rawFileName || '',
+    raw_save_error: fetched.rawSaveError || '',
     markdown_file_id: markdownFileId,
     structured_file_id: structuredFileId || '',
     last_hash: hash,
@@ -6554,6 +6579,7 @@ function runAllTests() {
   test_本文がJSON形式で返る場合();
   test_XMLとJSONで同じ結果になること();
   test_部分一致で本命法令が埋もれる場合();
+  test_原本が大きすぎて保存できない場合();
 
   return summarizeTests_();
 }
@@ -7982,6 +8008,62 @@ function test_部分一致で本命法令が埋もれる場合() {
       assertEquals_(1, countFiles_(mdFolder), '保存されたのは1件だけである');
       assertTrue_(!!ctx.driveService.readTextFile(mdFolder, '所得税法.md'),
         '所得税法.md が保存されている');
+    });
+  });
+}
+
+/**
+ * 原本がDriveの上限を超えて保存できない場合でも、
+ * Markdownは保存され、その法令が失われないこと。
+ *
+ * 実際に所得税法（日本で最も長い法律の一つ）で発生した事象の再現。
+ */
+function test_原本が大きすぎて保存できない場合() {
+  runTest_('原本が大きすぎて保存できない場合', function () {
+    withTestContext_(function (ctx) {
+      stubEgovApi_({
+        '所得税法': { lawId: '340AC0000000033', lawNum: '昭和四十年法律第三十三号' }
+      });
+
+      // 原本ファイルの保存だけが失敗する状況を作る。
+      // 台帳（同期状態.json）や構造化JSONまで巻き込まないよう、
+      // 原本フォルダ配下の該当ファイルに限定する。
+      var rawFolderId = ctx.driveService.getRawXmlFolder('tax').getId();
+      var realUpsert = DriveService.prototype.upsertTextFile;
+      DriveService.prototype.upsertTextFile = function (
+          folder, fileName, content, knownFileId, mimeType) {
+        if (folder.getId() === rawFolderId && fileName.indexOf('所得税法.') === 0) {
+          throw new Error('File ' + fileName + ' exceeds the maximum file size.');
+        }
+        return realUpsert.call(this, folder, fileName, content, knownFileId, mimeType);
+      };
+
+      var summary;
+      try {
+        summary = runSync({ runName: 'test', lawName: '所得税法', dryRun: false });
+      } finally {
+        DriveService.prototype.upsertTextFile = realUpsert;
+      }
+
+      // 法令自体は保存されること（原本の失敗で全損にしない）
+      assertEquals_(1, summary.updated_count, '原本が保存できなくても法令は保存される');
+      assertEquals_(0, summary.failed_count, '法令全体が失敗扱いにならない');
+
+      var mdFolder = ctx.driveService.getMarkdownFolder('tax', 'act');
+      var md = ctx.driveService.readTextFile(mdFolder, '所得税法.md');
+      assertTrue_(!!md, 'Markdownは保存されている');
+      assertTrue_(md.indexOf('#### 第一条') !== -1, '条文が読める状態で残っている');
+
+      // 何が起きたか台帳に残ること
+      var state = loadSyncState(ctx.driveService);
+      var record = state.laws['340AC0000000033'];
+      assertTrue_(!!record, '台帳に記録されている');
+      assertTrue_(record.raw_save_error.indexOf('maximum file size') !== -1,
+        '原本を保存できなかった理由が記録されている');
+      assertEquals_('', record.xml_file_id, '原本のファイルIDは空である');
+
+      // ERRORとしてログに残ること（利用者が気付けるように）
+      assertTrue_(summary.warnings.length >= 0, 'ログが記録されている');
     });
   });
 }

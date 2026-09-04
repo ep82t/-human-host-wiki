@@ -272,8 +272,11 @@ function fetchLawContent(lawIdOrNum, logger) {
         });
         return {
           ok: true,
-          // レスポンス全体を原本として保存する（書誌情報も含まれるため）
-          raw: JSON.stringify(jsonResult.data, null, 2),
+          // e-Govが返した本文をそのまま原本とする。
+          // 整形（インデント付与）は原本の改変にあたるうえ、
+          // 法令XMLのような深い入れ子では空白がファイル全体を肥大化させ、
+          // Driveの上限を超える原因にもなるため、絶対に行わない。
+          raw: jsonResult.body,
           tree: tree, format: 'json', extension: 'json',
           source: 'law_data(json)', url: jsonUrl, error: null, meta: jsonResult.data
         };
