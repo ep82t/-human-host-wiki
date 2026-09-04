@@ -261,12 +261,15 @@ function getLawsConfig() {
   {
     category: 'social_insurance',
     name: '健康保険法施行令',
-    expectedLawType: 'cabinet_order',
+    // e-Gov上の正式な法令種別は「勅令」（大正十五年勅令第二百四十三号）。
+    // 戦前に制定され、現在も効力を有する。名称は「施行令」だが政令ではない。
+    // e-Gov側の事実に合わせているため、保存先は 04_その他 になる。
+    expectedLawType: 'imperial_order',
     enabled: true,
     lawId: null,
     lawNum: null,
     aliases: [],
-    notes: '社会保険／政令'
+    notes: '社会保険／勅令（大正十五年勅令第二百四十三号）。名称は施行令だが政令ではない'
   },
   {
     category: 'social_insurance',
