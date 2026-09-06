@@ -783,7 +783,7 @@ function getLawsConfig() {
     lawNum: null,
     aliases: [],
     notes: '労働保険／省令'
-  }
+  },
 
     // ------- 関連法令（必要に応じてここへ追加する） -------
     // 税制・社会保険・労働保険の各法令から直接参照される重要な法令を
@@ -799,6 +799,80 @@ function getLawsConfig() {
     //   aliases: [],
     //   notes: '追加理由をここに書く'
     // }
+
+  {
+    category: 'related',
+    name: '地方自治法',
+    expectedLawType: 'act',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: [],
+    notes: '条例で何を定められるかの範囲を決める法律。北海道・函館市など地方の制度を扱う際に必須'
+  },
+  {
+    category: 'related',
+    name: '地方自治法施行令',
+    expectedLawType: 'cabinet_order',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: [],
+    notes: '地方自治法の細目'
+  },
+  {
+    category: 'related',
+    name: '地方財政法',
+    expectedLawType: 'act',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: [],
+    notes: '自治体の財政運営の原則。財源の議論に必要'
+  },
+  {
+    category: 'related',
+    name: '財政法',
+    expectedLawType: 'act',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: [],
+    notes: '国の財政の基本法。予算・国債の原則'
+  },
+  {
+    category: 'related',
+    name: '行政手続法',
+    expectedLawType: 'act',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: [],
+    notes: '許認可・行政指導・意見公募（パブリックコメント）の手続を定める'
+  },
+  {
+    category: 'related',
+    name: '行政機関の保有する情報の公開に関する法律',
+    expectedLawType: 'act',
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: ['情報公開法'],
+    notes: '行政文書の開示請求の根拠。資料を取り寄せる際に使う'
+  },
+  {
+    category: 'related',
+    name: '出入国管理及び難民認定法',
+    // 法令番号は「昭和二十六年政令第三百十九号」であり、名称は「法」だが
+    // e-Gov上の法令種別が何になるか未確認のため、期待値を指定しない。
+    // 指定しなければ、e-Govが返した種別がそのまま採用される。
+    expectedLawType: null,
+    enabled: true,
+    lawId: null,
+    lawNum: null,
+    aliases: ['入管法'],
+    notes: '在留資格・受入れ制度の根拠。移民に関する論点で必要'
+  }
   ];
 }
 
