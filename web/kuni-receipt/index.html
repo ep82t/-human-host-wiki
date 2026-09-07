@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="給料から引かれる分だけでなく、消費税・再エネ賦課金・自動車税・重量税・ガソリン税・生活費・保険まで足して、1年で国にいくら納め、いくら手元に残るのかを計算します。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="1年でいくら国に納めて、いくら手元に残るのか">
+<meta property="og:description" content="給料から引かれる分だけでなく、消費税・再エネ賦課金・自動車税・重量税・ガソリン税・生活費・保険まで足して、1年で国にいくら納め、いくら手元に残るのかを計算します。">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#ECEEF0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1318" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%BE%3C/text%3E%3C/svg%3E">
+<title>国からの年間レシート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* 公開版だけに必要な最低限のリセット */
+  html { color-scheme: light dark; }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+  :root {
+    --ground:    #ECEEF0;
+    --surface:   #FFFFFF;
+    --paper:     #FBFAF6;
+    --sub:       #DFE4E9;
+    --ink:       #131C24;
+    --ink-soft:  #44535F;
+    --ink-faint: #6C7A86;
+    --rule:      #CCD5DC;
+    --rule-soft: #E3E9ED;
+    --accent:    #0B5D7A;
+    --accent-soft:#DDEDF3;
+    --minus:     #97402C;
+    --minus-soft:#F7E9E4;
+    --plus:      #17604180;
+    --plus-ink:  #176041;
+    --plus-soft: #E0F0E8;
+    --hidden:    #614589;
+    --hidden-soft:#EBE4F5;
+    --levy:      #7D5810;
+    --levy-soft: #F8F0DC;
+    --spend:     #3F576B;
+    --shadow: 0 1px 2px rgba(19,28,36,.06), 0 12px 30px -22px rgba(19,28,36,.5);
+    --paper-shadow: 0 1px 2px rgba(19,28,36,.08), 0 18px 40px -26px rgba(19,28,36,.7);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0D1318; --surface: #161E25; --paper: #1B2229; --sub: #263039;
+      --ink: #E6ECF1; --ink-soft: #A6B3BE; --ink-faint: #7C8994;
+      --rule: #2C3841; --rule-soft: #222C34;
+      --accent: #6BBDD9; --accent-soft:#122E39;
+      --minus: #E59A81; --minus-soft:#341F19;
+      --plus: #6FC69B80; --plus-ink: #74CBA0; --plus-soft: #13291F;
+      --hidden: #BCA2DE; --hidden-soft:#241C33;
+      --levy: #DCB367; --levy-soft: #2C2414;
+      --spend: #9FB3C4;
+      --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 30px -22px rgba(0,0,0,1);
+      --paper-shadow: 0 1px 2px rgba(0,0,0,.6), 0 18px 40px -26px rgba(0,0,0,1);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #0D1318; --surface: #161E25; --paper: #1B2229; --sub: #263039;
+    --ink: #E6ECF1; --ink-soft: #A6B3BE; --ink-faint: #7C8994;
+    --rule: #2C3841; --rule-soft: #222C34;
+    --accent: #6BBDD9; --accent-soft:#122E39;
+    --minus: #E59A81; --minus-soft:#341F19;
+    --plus: #6FC69B80; --plus-ink: #74CBA0; --plus-soft: #13291F;
+    --hidden: #BCA2DE; --hidden-soft:#241C33;
+    --levy: #DCB367; --levy-soft: #2C2414;
+    --spend: #9FB3C4;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 30px -22px rgba(0,0,0,1);
+    --paper-shadow: 0 1px 2px rgba(0,0,0,.6), 0 18px 40px -26px rgba(0,0,0,1);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "IBM Plex Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+    font-size: 16px; line-height: 1.75; -webkit-font-smoothing: antialiased;
+  }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 16px 90px; display: flex; flex-direction: column; gap: 22px; }
+  @media (min-width: 700px) { .wrap { padding: 44px 24px 100px; gap: 26px; } }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .16em; color: var(--minus); }
+  h1 { font-size: clamp(26px, 6.5vw, 36px); margin: 0; line-height: 1.28; text-wrap: balance; letter-spacing: -.01em; }
+  .lede { margin: 0; color: var(--ink-soft); max-width: 60ch; font-size: 15px; }
+
+  .caution {
+    border-left: 3px solid var(--levy); background: var(--levy-soft);
+    padding: 14px 16px; border-radius: 0 3px 3px 0; font-size: 14px; color: var(--ink);
+  }
+
+  /* ---------- モデル選択 ---------- */
+  .presets {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 5px;
+    box-shadow: var(--shadow); padding: 16px 16px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .presets h2 { margin: 0; font-size: 16px; }
+  .presets p { margin: 0; font-size: 13.5px; color: var(--ink-faint); }
+  .pbtns { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .pbtn {
+    font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+    background: var(--ground); color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 4px; padding: 11px 13px;
+    display: flex; flex-direction: column; gap: 2px; line-height: 1.4;
+  }
+  .pbtn b { font-weight: 700; }
+  .pbtn span { font-size: 12px; color: var(--ink-faint); }
+  .pbtn:hover { border-color: var(--accent); }
+  .pbtn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+  .pbtn.clear { background: var(--surface); border-style: dashed; }
+  .pbtn.clear b { color: var(--minus); }
+
+  /* ---------- 見出し数字 ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 5px;
+    box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px;
+    border-top: 3px solid var(--rule);
+  }
+  .tile.t-real { border-top-color: var(--accent); }
+  .tile.t-tax  { border-top-color: var(--minus); }
+  .tile.t-left { border-top-color: var(--plus-ink); }
+  .tile .k { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); }
+  .tile .v { font-size: clamp(26px, 7vw, 33px); font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+  .tile.t-tax .v  { color: var(--minus); }
+  .tile.t-left .v { color: var(--plus-ink); }
+  .tile .s { font-size: 12.5px; color: var(--ink-faint); }
+
+  .barwrap { background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .barwrap .k { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); }
+  .bar { display: flex; height: 22px; border-radius: 3px; overflow: hidden; background: var(--sub); }
+  .bar > span { display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink-soft); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+  /* ---------- 入力 ---------- */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (min-width: 1040px) { .cols { grid-template-columns: minmax(0, 1fr) 400px; gap: 26px; } }
+
+  .form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+  .block { background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; box-shadow: var(--shadow); overflow: hidden; }
+  .block > h2 {
+    margin: 0; padding: 14px 16px 12px; font-size: 15.5px;
+    border-bottom: 1px solid var(--rule-soft); display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  }
+  .block > h2 .tag { font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; }
+  .block > h2 .sum {
+    margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+    font-size: 14px; font-weight: 600; color: var(--minus); white-space: nowrap;
+  }
+  .block > h2 .sum.spendish { color: var(--spend); }
+  .bodyx { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ラベルの行数やバッジの有無で入力欄の高さがずれないよう、
+     ラベル側を伸ばして入力欄を下端でそろえる */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; align-items: stretch; }
+  .f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .f > label {
+    font-size: 13px; color: var(--ink-soft); font-weight: 500;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    flex: 1 1 auto; align-content: flex-start; line-height: 1.5;
+  }
+  .f > input, .f > select {
+    font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 16px;
+    padding: 0 11px; border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--ground); color: var(--ink);
+    width: 100%; min-width: 0; height: 44px; margin-top: auto; flex: none;
+  }
+  .f > select { font-family: "IBM Plex Sans JP", sans-serif; font-size: 15px; padding-right: 6px; }
+  .f input:focus-visible, .f select:focus-visible, summary:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .sublabel {
+    font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--accent);
+    border-bottom: 1px solid var(--rule-soft); padding-bottom: 5px; margin-top: 2px;
+  }
+  .f input[readonly] { background: var(--sub); color: var(--ink-soft); border-style: dashed; }
+  .hint { font-size: 13px; color: var(--ink-faint); line-height: 1.7; }
+  .hint.wide { grid-column: 1 / -1; }
+  .hint b { color: var(--ink-soft); }
+
+  .verify {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .05em; color: var(--levy);
+    background: var(--levy-soft); border: 1px solid currentColor; border-radius: 2px;
+    padding: 0 4px; line-height: 1.6; white-space: nowrap;
+  }
+  .free {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .05em; color: var(--plus-ink);
+    background: var(--plus-soft); border: 1px solid currentColor; border-radius: 2px;
+    padding: 0 4px; line-height: 1.6; white-space: nowrap;
+  }
+
+  .check { display: flex; align-items: center; gap: 9px; font-size: 14.5px; color: var(--ink-soft); }
+  .check input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+
+  details { border-top: 1px dashed var(--rule); padding-top: 12px; }
+  summary { cursor: pointer; font-size: 13.5px; color: var(--accent); font-weight: 500; padding: 3px 0; }
+  details > .grid { margin-top: 12px; }
+
+  /* ---------- レシート ---------- */
+  .receipt-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  @media (min-width: 1040px) { .receipt-col { position: sticky; top: 20px; } }
+
+  .receipt {
+    background: var(--paper); color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 3px; box-shadow: var(--paper-shadow);
+    padding: 20px 18px 16px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums; font-size: 13.5px; line-height: 1.6;
+    display: flex; flex-direction: column;
+  }
+  @media (min-width: 1040px) { .receipt { max-height: calc(100vh - 40px); } .r-scroll { overflow-y: auto; min-height: 0; } }
+
+  .r-head { text-align: center; display: flex; flex-direction: column; gap: 3px; padding-bottom: 12px; }
+  .r-head .r-org { font-size: 15px; font-weight: 600; letter-spacing: .18em; }
+  .r-head .r-meta { font-size: 11.5px; color: var(--ink-faint); letter-spacing: .03em; }
+  .r-sep { border: 0; border-top: 1px dashed var(--rule); margin: 0; }
+
+  .r-group { padding: 12px 0 3px; }
+  .r-group-title {
+    font-size: 11.5px; letter-spacing: .1em; font-weight: 600;
+    display: flex; align-items: baseline; gap: 7px; color: var(--ink-soft); padding-bottom: 4px;
+  }
+  .r-dot { width: 8px; height: 8px; border-radius: 1px; flex: none; }
+
+  .r-line { display: flex; align-items: baseline; gap: 6px; padding: 2px 0; }
+  .r-line .lab { flex: none; max-width: 60%; }
+  .r-line .lead { flex: 1 1 auto; border-bottom: 1px dotted var(--rule); transform: translateY(-4px); min-width: 8px; }
+  .r-line .amt { flex: none; font-weight: 500; }
+  .r-line.faint .lab, .r-line.faint .amt { color: var(--ink-faint); }
+  .r-note { font-size: 11.5px; color: var(--ink-faint); padding: 0 0 4px 12px; }
+  .r-sub { display: flex; justify-content: space-between; padding: 6px 0 3px; font-weight: 600; }
+
+  .r-fine { font-size: 11.5px; color: var(--ink-faint); line-height: 1.7; padding-top: 12px; }
+
+  .freedom { background: var(--minus-soft); border: 1px solid var(--minus); border-radius: 5px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .freedom .k { font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--minus); }
+  .freedom .v { font-size: 19px; font-weight: 700; line-height: 1.45; }
+  .freedom .v .num { font-size: 27px; color: var(--minus); }
+  .freedom p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- 出典 ---------- */
+  .sources { background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; box-shadow: var(--shadow); }
+  .sources > h2 { margin: 0; padding: 15px 16px 13px; font-size: 15.5px; border-bottom: 1px solid var(--rule-soft); }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 620px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; white-space: nowrap; }
+  td.n { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td a { color: var(--accent); word-break: break-all; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  footer { font-size: 13.5px; color: var(--ink-faint); line-height: 1.8; }
+  footer b { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">くらしの税・社会保険シミュレーター</div>
+    <h1>1年でいくら国に納めて、いくら手元に残るのか</h1>
+    <p class="lede">
+      給与から引かれる分だけが税金ではありません。買い物の消費税、電気代の再エネ賦課金、
+      車の自動車税・重量税・ガソリン税。そこに家賃・保険・スマホ代まで足すと、1年でいくら残るのか。
+      まずは<b>平均のモデル</b>で見て、そのあと自分の家の数字を入れてみてください。
+    </p>
+  </header>
+
+  <!-- ===================== モデル選択 ===================== -->
+  <div class="presets">
+    <h2>まずはモデルを選ぶ</h2>
+    <p><b>モデルごとに、その暮らし方の平均年収を入れてあります。</b>ひとり暮らしも子育て世帯もひとり親も、稼いでいる額は違うからです。
+    数字はすべて後から変えられます。年収は「平均年収から入れる」で年齢層を選ぶこともできます。<br>
+    平均給与は<b>全体478万円・男性587万円・女性333万円</b>（国税庁・令和6年分）、
+    <b>世帯所得の中央値は451万円</b>、<b>児童のいる世帯の平均児童数は1.68人</b>（厚生労働省・2025年）です。</p>
+    <div class="pbtns">
+      <button type="button" class="pbtn" data-preset="young" aria-pressed="false">
+        <b>20代・ひとり暮らし</b><span>25〜29歳の平均 407万円</span>
+      </button>
+      <button type="button" class="pbtn" data-preset="avg" aria-pressed="true">
+        <b>日本の平均・ひとり暮らし</b><span>全体の平均 478万円</span>
+      </button>
+      <button type="button" class="pbtn" data-preset="couple" aria-pressed="false">
+        <b>夫婦ふたり・片働き</b><span>35〜39歳男性の平均 574万円</span>
+      </button>
+      <button type="button" class="pbtn" data-preset="family" aria-pressed="false">
+        <b>夫婦＋子ども2人・共働き</b><span>516万＋351万＝867万円</span>
+      </button>
+      <button type="button" class="pbtn" data-preset="single_parent" aria-pressed="false">
+        <b>ひとり親・子ども1人</b><span>母子世帯の平均 就労236万円</span>
+      </button>
+      <button type="button" class="pbtn" data-preset="tight" aria-pressed="false">
+        <b>月30万・片働き・子ども1人</b><span>年360万円・平均に届かない世帯</span>
+      </button>
+      <button type="button" class="pbtn clear" data-preset="clear" aria-pressed="false">
+        <b>クリアして自分で入力</b><span>全部0にして自分の家の数字を入れる</span>
+      </button>
+    </div>
+    <div class="hint" id="presetNote"></div>
+  </div>
+
+  <!-- ===================== 見出し数字 ===================== -->
+  <div class="tiles">
+    <div class="tile t-real">
+      <div class="k">世帯に入ってくる総額（会社負担・手当ふくむ）</div>
+      <div class="v num" id="hReal">¥0</div>
+      <div class="s" id="hRealSub">月あたり ¥0</div>
+    </div>
+    <div class="tile t-tax">
+      <div class="k">1年で国・自治体に納めた合計</div>
+      <div class="v num" id="hTax">¥0</div>
+      <div class="s" id="hTaxSub">本来の年収の 0%</div>
+    </div>
+    <div class="tile t-left">
+      <div class="k">1年で手元に残るお金</div>
+      <div class="v num" id="hLeft">¥0</div>
+      <div class="s" id="hLeftSub">月あたり ¥0</div>
+    </div>
+  </div>
+
+  <div class="barwrap">
+    <div class="k">入ってくるお金が、どこへ消えているか</div>
+    <div class="bar" id="hBar"></div>
+    <div class="legend">
+      <span><i style="background:var(--minus)"></i>税</span>
+      <span><i style="background:var(--hidden)"></i>社会保険料（会社負担ふくむ）</span>
+      <span><i style="background:var(--levy)"></i>賦課金</span>
+      <span><i style="background:var(--spend)"></i>生活費（税を除く）</span>
+      <span><i style="background:var(--plus-ink)"></i>残るお金</span>
+    </div>
+  </div>
+
+  <div class="caution">
+    <b>これは概算です。</b>税率は2026年9月7日時点、平均値は最新の公表統計を使っています（出典は最下部）。
+    保険料率は都道府県・健康保険組合によって、税額は自治体や個別事情によって変わります。
+    <b>すべての数字は編集できます</b>ので、給与明細・請求書・納税通知書の数字に置き換えてお使いください。
+  </div>
+
+  <div class="cols">
+
+    <!-- ===================== 入力 ===================== -->
+    <div class="form">
+
+      <!-- 01 給料 -->
+      <div class="block">
+        <h2><span class="tag">01</span>世帯の収入と、そこから引かれるもの<span class="sum num" id="sumPay">¥0</span></h2>
+        <div class="bodyx">
+          <div class="sublabel">世帯主</div>
+          <div class="grid">
+            <div class="f"><label for="gross">月の総支給額（円）</label><input type="number" id="gross" value="340000" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="bonus">賞与の年間合計（円）</label><input type="number" id="bonus" value="700000" min="0" step="10000" inputmode="numeric"></div>
+            <div class="f"><label for="age">年齢</label>
+              <select id="age">
+                <option value="under40">40歳未満</option>
+                <option value="40to64" selected>40〜64歳（介護保険あり）</option>
+                <option value="over65">65歳以上（厚生年金なし）</option>
+              </select>
+            </div>
+            <div class="f"><label for="auto1">平均年収から入れる<span class="verify">国税庁</span></label>
+              <select id="auto1">
+        <option value="">（選ぶと自動で入ります）</option>
+        <option value="4780000">全体の平均　478万円</option>
+        <option value="5870000">男性の平均　587万円</option>
+        <option value="3330000">女性の平均　333万円</option>
+        <option value="5450000">正社員の平均　545万円</option>
+        <option value="2060000">正社員以外の平均　206万円</option>
+        <option value="1180000">19歳以下　118万円</option>
+        <option value="2770000">20〜24歳　277万円</option>
+        <option value="4070000">25〜29歳　407万円</option>
+        <option value="4490000">30〜34歳　449万円</option>
+        <option value="4820000">35〜39歳　482万円</option>
+        <option value="5160000">40〜44歳　516万円</option>
+        <option value="5400000">45〜49歳　540万円</option>
+        <option value="5590000">50〜54歳　559万円</option>
+        <option value="5720000">55〜59歳　572万円</option>
+        <option value="3700000">65〜69歳　370万円</option>
+        <option value="3050000">70歳以上　305万円</option>
+        <option value="5120000">30〜34歳 男性　512万円</option>
+        <option value="3620000">30〜34歳 女性　362万円</option>
+        <option value="5740000">35〜39歳 男性　574万円</option>
+        <option value="3510000">35〜39歳 女性　351万円</option>
+        <option value="7350000">55〜59歳 男性　735万円</option>
+        <option value="2360000">母子世帯の母 就労収入　236万円</option>
+        <option value="4960000">父子世帯の父 就労収入　496万円</option>
+              </select>
+            </div>
+            <div class="f"><label>世帯主の年収（自動計算）</label><input type="text" id="income1" value="" readonly tabindex="-1"></div>
+          </div>
+          <div class="sublabel">配偶者（いない場合・収入がない場合は0のまま）</div>
+          <div class="grid">
+            <div class="f"><label for="gross2">月の総支給額（円）</label><input type="number" id="gross2" value="0" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="bonus2">賞与の年間合計（円）</label><input type="number" id="bonus2" value="0" min="0" step="10000" inputmode="numeric"></div>
+            <div class="f"><label for="age2">年齢</label>
+              <select id="age2">
+                <option value="under40">40歳未満</option>
+                <option value="40to64" selected>40〜64歳（介護保険あり）</option>
+                <option value="over65">65歳以上（厚生年金なし）</option>
+              </select>
+            </div>
+            <div class="f"><label for="hasSpouse">配偶者</label>
+              <select id="hasSpouse">
+                <option value="1" selected>いる</option>
+                <option value="0">いない</option>
+              </select>
+            </div>
+            <div class="f"><label for="auto2">平均年収から入れる<span class="verify">国税庁</span></label>
+              <select id="auto2">
+        <option value="">（選ぶと自動で入ります）</option>
+        <option value="4780000">全体の平均　478万円</option>
+        <option value="5870000">男性の平均　587万円</option>
+        <option value="3330000">女性の平均　333万円</option>
+        <option value="5450000">正社員の平均　545万円</option>
+        <option value="2060000">正社員以外の平均　206万円</option>
+        <option value="1180000">19歳以下　118万円</option>
+        <option value="2770000">20〜24歳　277万円</option>
+        <option value="4070000">25〜29歳　407万円</option>
+        <option value="4490000">30〜34歳　449万円</option>
+        <option value="4820000">35〜39歳　482万円</option>
+        <option value="5160000">40〜44歳　516万円</option>
+        <option value="5400000">45〜49歳　540万円</option>
+        <option value="5590000">50〜54歳　559万円</option>
+        <option value="5720000">55〜59歳　572万円</option>
+        <option value="3700000">65〜69歳　370万円</option>
+        <option value="3050000">70歳以上　305万円</option>
+        <option value="5120000">30〜34歳 男性　512万円</option>
+        <option value="3620000">30〜34歳 女性　362万円</option>
+        <option value="5740000">35〜39歳 男性　574万円</option>
+        <option value="3510000">35〜39歳 女性　351万円</option>
+        <option value="7350000">55〜59歳 男性　735万円</option>
+        <option value="2360000">母子世帯の母 就労収入　236万円</option>
+        <option value="4960000">父子世帯の父 就労収入　496万円</option>
+              </select>
+            </div>
+            <div class="f"><label>配偶者の年収（自動計算）</label><input type="text" id="income2" value="" readonly tabindex="-1"></div>
+          </div>
+          <div class="sublabel">子ども</div>
+          <div class="grid">
+            <div class="f"><label for="kids">子どもの人数</label><input type="number" id="kids" value="0" min="0" max="8" step="1" inputmode="numeric"></div>
+            <div class="f"><label for="kidsU3">うち3歳未満</label><input type="number" id="kidsU3" value="0" min="0" max="8" step="1" inputmode="numeric"></div>
+            <div class="f"><label for="dep16">扶養控除の対象人数<span class="verify">16歳以上</span></label><input type="number" id="dep16" value="0" min="0" step="1" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            会社が負担している社会保険料も足しています。給与明細には載りませんが、
+            あなたを雇うために会社が払っている以上、<b>本来あなたの人件費</b>です。<br>
+            <b>16歳未満の子どもは扶養控除の対象になりません</b>（児童手当があるためです）。
+            高校生・大学生の子どもや同居の親がいる場合だけ「扶養控除の対象人数」に入れてください。
+            配偶者の収入が0なら、配偶者控除は自動で入ります。
+          </div>
+          <details>
+            <summary>保険料率・控除額を確認して変える</summary>
+            <div class="grid">
+              <div class="f"><label for="rHealth">健康保険料率 %<span class="verify">要確認</span></label><input type="number" id="rHealth" value="10.28" step="0.01"></div>
+              <div class="f"><label for="rCare">介護保険料率 %<span class="verify">要確認</span></label><input type="number" id="rCare" value="1.62" step="0.01"></div>
+              <div class="f"><label for="rSupport">子ども・子育て支援金率 %<span class="verify">要確認</span></label><input type="number" id="rSupport" value="0.23" step="0.01"></div>
+              <div class="f"><label for="rPension">厚生年金保険料率 %</label><input type="number" id="rPension" value="18.30" step="0.01"></div>
+              <div class="f"><label for="rEmpW">雇用保険 本人 %<span class="verify">要確認</span></label><input type="number" id="rEmpW" value="0.5" step="0.05"></div>
+              <div class="f"><label for="rEmpC">雇用保険 会社 %<span class="verify">要確認</span></label><input type="number" id="rEmpC" value="0.85" step="0.05"></div>
+              <div class="f"><label for="rRosai">労災保険 会社 %<span class="verify">要確認</span></label><input type="number" id="rRosai" value="0.3" step="0.05"></div>
+              <div class="f"><label for="rKyoshutsu">子ども・子育て拠出金 会社 %</label><input type="number" id="rKyoshutsu" value="0.36" step="0.01"></div>
+              <div class="f"><label for="cBasicIncome">基礎控除（所得税）円<span class="verify">要確認</span></label><input type="number" id="cBasicIncome" value="950000" step="10000"></div>
+              <div class="f"><label for="cBasicResident">基礎控除（住民税）円<span class="verify">要確認</span></label><input type="number" id="cBasicResident" value="430000" step="10000"></div>
+              <div class="f"><label for="cSpouseI">配偶者控除（所得税）円<span class="verify">要確認</span></label><input type="number" id="cSpouseI" value="380000" step="10000"></div>
+              <div class="f"><label for="cSpouseR">配偶者控除（住民税）円<span class="verify">要確認</span></label><input type="number" id="cSpouseR" value="330000" step="10000"></div>
+              <div class="f"><label for="cDepI">扶養控除（所得税）円</label><input type="number" id="cDepI" value="380000" step="10000"></div>
+              <div class="f"><label for="cDepR">扶養控除（住民税）円</label><input type="number" id="cDepR" value="330000" step="10000"></div>
+              <div class="f"><label for="rResident">住民税 所得割 %</label><input type="number" id="rResident" value="10" step="0.1"></div>
+              <div class="f"><label for="flatTax">住民税 均等割＋森林環境税 円</label><input type="number" id="flatTax" value="5000" step="500"></div>
+              <div class="hint wide">健康保険料率は<b>協会けんぽ 北海道支部（2026年度）</b>の値です。基礎控除は令和7・8年分の上乗せ特例を反映した95万円が初期値です。</div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 02 住まいと食費 -->
+      <div class="block">
+        <h2><span class="tag">02</span>住まい・食費・生活費<span class="sum num spendish" id="sumLive">¥0</span></h2>
+        <div class="bodyx">
+          <div class="grid">
+            <div class="f"><label for="rent">家賃・住宅ローン（月）<span class="free">消費税なし</span></label><input type="number" id="rent" value="60000" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="food">食費（月）<span class="verify">8%</span></label><input type="number" id="food" value="65000" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="living">日用品・服・医療・娯楽など（月）<span class="verify">10%</span></label><input type="number" id="living" value="42000" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="edu">教育費（月）<span class="free">授業料は非課税</span></label><input type="number" id="edu" value="0" min="0" step="1000" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            <b>電気・ガス・水道・スマホ・保険・車の費用は入れないでください。</b>下でそれぞれ計算します。<br>
+            住宅の家賃と、学校の授業料には消費税がかかりません。塾や習い事は課税なので「日用品・服…」のほうに入れてください。
+          </div>
+          <div class="hint">
+            <b>ここだけは「平均」を使っていません。</b>家計調査の二人以上世帯の消費支出は月31.4万円ですが、
+            これは<b>平均的な収入の世帯</b>の数字です（勤労者世帯の実収入の平均は月50万円を超えます）。
+            月30万円の世帯にそのまま当てはめると、当然のように赤字になってしまい、比較として意味がなくなります。
+            そこで家賃・食費・日用品だけは、月30万円で暮らす場合の想定額を置いています。
+            光熱費・通信費・保険料・車の費用は収入による差が小さいので、統計の平均をそのまま使っています。
+          </div>
+          <div class="hint">
+            値札が税込みなので、<b>46,000円の食費のうち税は4,600円ではなく3,407円</b>（46,000×8÷108）です。
+            10%のものも「支払額の10分の1」ではなく「11分の1」になります。
+          </div>
+          <details>
+            <summary>消費税率を変える（5%や0%にしたらどうなるか）</summary>
+            <div class="grid">
+              <div class="f"><label for="rVat">消費税率 %</label><input type="number" id="rVat" value="10" step="1"></div>
+              <div class="f"><label for="rVatFood">軽減税率（食料品）%</label><input type="number" id="rVatFood" value="8" step="1"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 03 光熱水 -->
+      <div class="block">
+        <h2><span class="tag">03</span>電気・ガス・水道<span class="sum num" id="sumUtil">¥0</span></h2>
+        <div class="bodyx">
+          <div class="grid">
+            <div class="f"><label for="elecYen">電気代（月・税込）</label><input type="number" id="elecYen" value="11000" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="elecKwh">使用量（月・kWh）</label><input type="number" id="elecKwh" value="0" min="0" step="10" inputmode="numeric"></div>
+            <div class="f"><label for="gasYen">ガス代（月・税込）</label><input type="number" id="gasYen" value="4200" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="waterYen">水道代（月・税込）</label><input type="number" id="waterYen" value="3900" min="0" step="500" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            使用量を0のままにすると、電気代から単価で逆算します（検針票にkWhが書いてあります）。
+            <b>再エネ賦課金</b>は太陽光などの買取費用を全世帯から集めるお金、<b>電源開発促進税</b>は電気代に紛れていて明細に出てこない税です。
+          </div>
+          <details>
+            <summary>電気にかかる単価を確認して変える</summary>
+            <div class="grid">
+              <div class="f"><label for="rSaiene">再エネ賦課金 円/kWh<span class="verify">要確認</span></label><input type="number" id="rSaiene" value="4.18" step="0.01"></div>
+              <div class="f"><label for="rDengen">電源開発促進税 円/kWh<span class="verify">要確認</span></label><input type="number" id="rDengen" value="0.375" step="0.001"></div>
+              <div class="f"><label for="elecUnit">電気の単価 円/kWh（逆算用）</label><input type="number" id="elecUnit" value="31" step="1"></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 04 通信 -->
+      <div class="block">
+        <h2><span class="tag">04</span>スマホ・インターネット<span class="sum num" id="sumComm">¥0</span></h2>
+        <div class="bodyx">
+          <div class="grid">
+            <div class="f"><label for="phoneYen">スマホ代（月・世帯合計）</label><input type="number" id="phoneYen" value="8000" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="netYen">光回線・ネット代（月）</label><input type="number" id="netYen" value="5000" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="nhkYen">NHK受信料（月換算）</label><input type="number" id="nhkYen" value="1100" min="0" step="100" inputmode="numeric"></div>
+            <div class="f"><label for="subsYen">サブスク・その他（月）</label><input type="number" id="subsYen" value="1500" min="0" step="500" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            スマホ1台の月額平均は<b>3,997円</b>（MM総研・2025年）。通信費には消費税がかかります。
+            NHK受信料は税ではありませんが、放送法で契約が義務づけられている支出なので、生活費として分けて出しています。
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 保険 -->
+      <div class="block">
+        <h2><span class="tag">05</span>保険（税ではないが、必ず出ていくお金）<span class="sum num spendish" id="sumIns">¥0</span></h2>
+        <div class="bodyx">
+          <div class="grid">
+            <div class="f"><label for="lifeIns">生命保険・医療保険（月）<span class="free">消費税なし</span></label><input type="number" id="lifeIns" value="17500" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="otherIns">火災・地震保険など（月換算）<span class="free">消費税なし</span></label><input type="number" id="otherIns" value="1500" min="0" step="500" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            二人以上世帯の生命保険料は<b>年35.3万円（月2.9万円）</b>が平均、夫婦のみ40歳未満なら<b>年21.0万円（月1.75万円）</b>です
+            （生命保険文化センター・2024年度）。<b>保険料には消費税がかかりません。</b>
+            車の任意保険は次の「車」に入れてください。
+          </div>
+        </div>
+      </div>
+
+      <!-- 06 車 -->
+      <div class="block">
+        <h2><span class="tag">06</span>車<span class="sum num" id="sumCar">¥0</span></h2>
+        <div class="bodyx">
+          <div class="check">
+            <input type="checkbox" id="hasCar" checked>
+            <label for="hasCar">車を持っている</label>
+          </div>
+          <div class="grid" id="carFields">
+            <div class="f"><label for="carType">車種</label>
+              <select id="carType">
+                <option value="normal" selected>普通車・小型車（白ナンバー）</option>
+                <option value="kei5">軽自動車 乗用（5ナンバー）</option>
+                <option value="kei4">軽自動車 貨物（4ナンバー）</option>
+              </select>
+            </div>
+            <div class="f" id="ccWrap"><label for="carCc">排気量</label>
+              <select id="carCc">
+                <option value="1000">1.0L以下</option>
+                <option value="1500" selected>1.0L超〜1.5L以下</option>
+                <option value="2000">1.5L超〜2.0L以下</option>
+                <option value="2500">2.0L超〜2.5L以下</option>
+                <option value="3000">2.5L超〜3.0L以下</option>
+                <option value="3500">3.0L超〜3.5L以下</option>
+                <option value="4000">3.5L超〜4.0L以下</option>
+                <option value="4500">4.0L超〜4.5L以下</option>
+                <option value="6000">4.5L超〜6.0L以下</option>
+                <option value="9999">6.0L超</option>
+              </select>
+            </div>
+            <div class="f" id="weightWrap"><label for="carWeight">車両重量</label>
+              <select id="carWeight">
+                <option value="0.5">0.5t以下</option>
+                <option value="1.0">0.5t超〜1.0t以下</option>
+                <option value="1.5" selected>1.0t超〜1.5t以下</option>
+                <option value="2.0">1.5t超〜2.0t以下</option>
+                <option value="2.5">2.0t超〜2.5t以下</option>
+                <option value="3.0">2.5t超〜3.0t以下</option>
+              </select>
+            </div>
+            <div class="f"><label for="carYear">初度登録の年</label><input type="number" id="carYear" value="2016" min="1960" max="2030" step="1" inputmode="numeric"></div>
+            <div class="f"><label for="carMonth">初度登録の月</label>
+              <select id="carMonth">
+                <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+                <option value="4" selected>4月</option><option value="5">5月</option><option value="6">6月</option>
+                <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+                <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+              </select>
+            </div>
+            <div class="f"><label for="carEco">エコカー減税</label>
+              <select id="carEco">
+                <option value="0" selected>対象外</option>
+                <option value="1">対象（重量税は本則税率）</option>
+              </select>
+            </div>
+            <div class="f"><label for="fuelType">燃料</label>
+              <select id="fuelType">
+                <option value="gas" selected>ガソリン</option>
+                <option value="diesel">軽油（ディーゼル）</option>
+              </select>
+            </div>
+            <div class="f"><label for="carKm">年間走行距離（km）</label><input type="number" id="carKm" value="8000" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="carNenpi">実燃費（km/L）</label><input type="number" id="carNenpi" value="14" min="1" step="0.5" inputmode="decimal"></div>
+            <div class="f"><label for="fuelPrice">燃料単価（円/L 税込）</label><input type="number" id="fuelPrice" value="155" min="1" step="1" inputmode="numeric"></div>
+            <div class="f"><label for="carIns">任意保険（年額）<span class="free">消費税なし</span></label><input type="number" id="carIns" value="55404" min="0" step="1000" inputmode="numeric"></div>
+            <div class="f"><label for="carJibai">自賠責（年換算）<span class="free">消費税なし</span></label><input type="number" id="carJibai" value="8760" min="0" step="500" inputmode="numeric"></div>
+            <div class="f"><label for="carShaken">車検の整備費用（年換算）</label><input type="number" id="carShaken" value="40000" min="0" step="5000" inputmode="numeric"></div>
+            <div class="f"><label for="carPark">駐車場代（月）</label><input type="number" id="carPark" value="0" min="0" step="1000" inputmode="numeric"></div>
+            <div class="hint wide">
+              任意保険の平均は<b>軽 51,059円／小型乗用 55,404円／普通乗用 75,267円</b>（損害保険料率算出機構・2024年度契約）。<br>
+              13年を超えると自動車税は約15%、重量税は約39%上がります（軽は約20%）。18年超で重量税はさらに上がります。
+              自賠責・任意保険は<b>税ではなく保険料</b>なので、レシートでは分けています。
+            </div>
+          </div>
+          <details>
+            <summary>燃料にかかる税額を確認して変える</summary>
+            <div class="grid">
+              <div class="f"><label for="rGasoline">揮発油税＋地方揮発油税 円/L<span class="verify">要確認</span></label><input type="number" id="rGasoline" value="28.7" step="0.1"></div>
+              <div class="f"><label for="rDiesel">軽油引取税 円/L<span class="verify">要確認</span></label><input type="number" id="rDiesel" value="15.0" step="0.1"></div>
+              <div class="f"><label for="rSekitan">石油石炭税＋温対税 円/L<span class="verify">要確認</span></label><input type="number" id="rSekitan" value="2.8" step="0.1"></div>
+              <div class="hint wide">
+                ガソリンの<b>暫定税率25.1円/Lは2025年12月31日に廃止</b>、軽油の暫定分17.1円/Lは2026年4月1日に廃止されました。
+                初期値は廃止後の本則税率です。ガソリンは<b>税込みの価格にさらに消費税がかかります</b>。
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 07 その他 -->
+      <div class="block">
+        <h2><span class="tag">07</span>たばこ・その他の税<span class="sum num" id="sumOther">¥0</span></h2>
+        <div class="bodyx">
+          <div class="grid">
+            <div class="f"><label for="smokeBox">たばこ（1日の箱数）</label><input type="number" id="smokeBox" value="0" min="0" step="0.5" inputmode="decimal"></div>
+            <div class="f"><label for="smokeTax">1箱あたりの税額<span class="verify">要確認</span></label><input type="number" id="smokeTax" value="350" min="0" step="10" inputmode="numeric"></div>
+            <div class="f"><label for="otherLabel">自分で足したい税の名前</label><input type="text" id="otherLabel" value="" placeholder="固定資産税など" style="font-family:inherit;"></div>
+            <div class="f"><label for="otherYen">その年額</label><input type="number" id="otherYen" value="0" min="0" step="1000" inputmode="numeric"></div>
+          </div>
+          <div class="hint">
+            持ち家の方は<b>固定資産税・都市計画税</b>を、温泉や宿に泊まる方は<b>入湯税・宿泊税</b>を、
+            お酒を飲む方は<b>酒税</b>を、納税通知書やレシートの数字でここに足してください。
+          </div>
+          <details>
+            <summary>児童手当（戻ってくるお金）を確認して変える</summary>
+            <div class="grid">
+              <div class="f"><label for="teate3">3歳未満（月・円）<span class="verify">要確認</span></label><input type="number" id="teate3" value="15000" step="1000"></div>
+              <div class="f"><label for="teateN">3歳〜18歳（月・円）<span class="verify">要確認</span></label><input type="number" id="teateN" value="10000" step="1000"></div>
+              <div class="f"><label for="teate3rd">第3子以降（月・円）<span class="verify">要確認</span></label><input type="number" id="teate3rd" value="30000" step="1000"></div>
+              <div class="f"><label for="teateOther">その他の手当（月・円）<span class="verify">要確認</span></label><input type="number" id="teateOther" value="0" step="1000"></div>
+              <div class="hint wide">
+                <b>児童扶養手当</b>（ひとり親）は2026年4月から第1子が全部支給で月48,050円、一部支給は48,040〜11,340円、
+                第2子以降の加算は11,350円です。所得によって変わるので「その他の手当」に自分の通知書の額を入れてください。
+              </div>
+              <div class="hint wide">
+                2024年10月から所得制限がなくなり、高校生年代（18歳到達後の最初の3月31日まで）まで支給されます。
+                取られる話だけでなく<b>戻ってくるお金も同じレシートに載せています</b>。片方だけ見せる資料は信用されないからです。
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================== レシート ===================== -->
+    <div class="receipt-col">
+
+      <div class="freedom">
+        <div class="k">言いかえると</div>
+        <div class="v">365日のうち <span class="num" id="fDays">0</span> 日は<br>国と自治体のために働いている</div>
+        <p id="fDate"></p>
+        <p id="fDaily" style="border-top:1px dashed var(--minus);padding-top:8px;margin-top:2px;"></p>
+      </div>
+
+      <div class="receipt">
+        <div class="r-head">
+          <div class="r-org">年 間 明 細</div>
+          <div class="r-meta" id="rMeta"></div>
+        </div>
+        <hr class="r-sep">
+        <div class="r-scroll"><div id="rBody"></div></div>
+        <hr class="r-sep">
+        <div class="r-fine" id="rFine"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== 出典 ===================== -->
+  <div class="sources">
+    <h2>使っている数字と、その出典（確認日 2026年9月7日）</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>項目</th><th>初期値</th><th>根拠・出典</th></tr></thead>
+        <tbody>
+          <tr><td>健康保険料率（協会けんぽ 北海道）</td><td class="n">10.28%</td><td><a href="https://www.kyoukaikenpo.or.jp/g3/cat330/sb3130/r08/" target="_blank" rel="noopener">協会けんぽ 令和8年度保険料額表</a>／労使折半</td></tr>
+          <tr><td>介護保険料率（40〜64歳）</td><td class="n">1.62%</td><td>同上／労使折半</td></tr>
+          <tr><td>子ども・子育て支援金率</td><td class="n">0.23%</td><td><a href="https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/003/index.html" target="_blank" rel="noopener">協会けんぽ 子ども・子育て支援金率</a>／2026年4月開始・労使折半</td></tr>
+          <tr><td>厚生年金保険料率</td><td class="n">18.30%</td><td><a href="https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/20150515.html" target="_blank" rel="noopener">日本年金機構 保険料額表</a>／労使折半</td></tr>
+          <tr><td>雇用保険料率（一般の事業）</td><td class="n">本人0.5% 会社0.85%</td><td><a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/koyou/koyouhoken/hokenryouritsu.html" target="_blank" rel="noopener">厚生労働省 雇用保険料率</a></td></tr>
+          <tr><td>消費税率</td><td class="n">10% / 8%</td><td>消費税法（e-Gov法令検索）／住宅の家賃・保険料・学校の授業料は非課税</td></tr>
+          <tr><td>再エネ賦課金</td><td class="n">4.18円/kWh</td><td><a href="https://www.meti.go.jp/press/2025/03/20260319004/20260319004.html" target="_blank" rel="noopener">経済産業省 2026年度賦課金単価</a>／全国一律</td></tr>
+          <tr><td>電源開発促進税</td><td class="n">0.375円/kWh</td><td>電源開発促進税法／電気料金に含まれ明細に表示されない</td></tr>
+          <tr><td>ガソリン税（本則）</td><td class="n">28.7円/L</td><td><a href="https://www.enecho.meti.go.jp/about/special/johoteikyo/zanteizeiritsu.html" target="_blank" rel="noopener">資源エネルギー庁 暫定税率の廃止</a>／暫定税率25.1円は2025年12月31日廃止</td></tr>
+          <tr><td>軽油引取税（本則）</td><td class="n">15.0円/L</td><td>同上／暫定分17.1円は2026年4月1日廃止。軽油引取税は消費税の課税対象外</td></tr>
+          <tr><td>自動車税（種別割）</td><td class="n">排気量別</td><td><a href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/131410.html" target="_blank" rel="noopener">総務省 2019年10月の自動車税制改正</a>／13年超は約15%重課</td></tr>
+          <tr><td>軽自動車税（種別割）</td><td class="n">10,800円 ほか</td><td><a href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/102384.html" target="_blank" rel="noopener">総務省 軽自動車税の税率</a>／2015年3月以前の新規検査は7,200円、13年超は12,900円</td></tr>
+          <tr><td>自動車重量税</td><td class="n">0.5tあたり年4,100円</td><td><a href="https://www.mof.go.jp/tax_policy/summary/consumption/131.pdf" target="_blank" rel="noopener">財務省 自動車重量税の概要</a>／13年超5,700円・18年超6,300円。車検2年分を年換算</td></tr>
+          <tr><td>基礎控除（所得税）</td><td class="n">95万円</td><td><a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm" target="_blank" rel="noopener">国税庁 基礎控除</a>／令和7・8年分の上乗せ特例</td></tr>
+          <tr><td>生活費の平均（世帯人数別）</td><td class="n">月31.4万円ほか</td><td><a href="https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html" target="_blank" rel="noopener">総務省統計局 家計調査 2025年平均</a>／二人以上の世帯の消費支出は月314,001円、単身勤労者世帯は約191,500円</td></tr>
+          <tr><td>電気代・ガス代・上下水道料の平均</td><td class="n">10,962／4,161／3,941円</td><td>同上（家計調査 2025年）／光熱・水道の合計は月24,547円</td></tr>
+          <tr><td>生命保険料の平均</td><td class="n">年35.3万円</td><td><a href="https://www.jili.or.jp/research/report/9849.html" target="_blank" rel="noopener">生命保険文化センター 2024年度 生命保険に関する全国実態調査</a>／二人以上世帯・個人年金を含む。夫婦のみ40歳未満は21.0万円、末子就学終了は42.1万円</td></tr>
+          <tr><td>自動車任意保険料の平均</td><td class="n">51,059／55,404／75,267円</td><td><a href="https://www.giroj.or.jp/publication/outline_j/" target="_blank" rel="noopener">損害保険料率算出機構 2025年度 自動車保険の概況</a>／2024年度契約・軽四輪／小型乗用／普通乗用の1台あたり年額</td></tr>
+          <tr><td>平均給与（1人あたり）</td><td class="n">478万円</td><td><a href="https://www.nta.go.jp/publication/statistics/kokuzeicho/minkan/gaiyou/2024.htm" target="_blank" rel="noopener">国税庁 令和6年分 民間給与実態統計調査</a>／1年を通じて勤務した給与所得者。男性587万円・女性333万円、正社員545万円・正社員以外206万円</td></tr>
+          <tr><td>平均給与の内訳</td><td class="n">給料403万＋賞与75万</td><td>同上／年収を月給と賞与に分けるとき、この比率（84.3%）を使っています</td></tr>
+          <tr><td>年齢階層別の平均給与（男女計）</td><td class="n">19歳以下118万〜55〜59歳572万</td><td>同上／20〜24歳277万、25〜29歳407万、30〜34歳449万、35〜39歳482万、40〜44歳516万、45〜49歳540万、50〜54歳559万、55〜59歳572万（ピーク）、65〜69歳370万、70歳以上305万。30〜34歳は男512万・女362万、35〜39歳は男574万・女351万、55〜59歳男性は735万</td></tr>
+          <tr><td>ひとり親世帯の収入</td><td class="n">母236万／父496万</td><td><a href="https://www.cfa.go.jp/policies/hitori-oya/reserch_single-parent_households" target="_blank" rel="noopener">全国ひとり親世帯等調査 令和3年度</a>／年間就労収入。母自身の年間収入は272万円、母子世帯全体では373万円</td></tr>
+          <tr><td>児童扶養手当</td><td class="n">月48,050〜11,340円</td><td><a href="https://www.cfa.go.jp/policies/hitori-oya/jidofuyouteate" target="_blank" rel="noopener">こども家庭庁 児童扶養手当</a>／2026年4月分から。第1子 全部支給48,050円・一部支給48,040〜11,340円、第2子以降の加算11,350円。所得により変動</td></tr>
+          <tr><td>世帯所得の平均・中央値</td><td class="n">575.2万円／451万円</td><td><a href="https://www.mhlw.go.jp/toukei/saikin/hw/k-tyosa/k-tyosa25/index.html" target="_blank" rel="noopener">厚生労働省 2025年 国民生活基礎調査</a>／世帯全員の所得の合計。半数の世帯は451万円より下</td></tr>
+          <tr><td>児童のいる世帯</td><td class="n">平均児童数1.68人</td><td>同上／917.4万世帯・全世帯の16.7%。平均所得857.3万円（高齢者世帯は336.1万円）</td></tr>
+          <tr><td>生活が「苦しい」と答えた世帯</td><td class="n">55.4%</td><td>同上／前回調査より上昇</td></tr>
+          <tr><td>児童手当</td><td class="n">月10,000〜30,000円</td><td><a href="https://www.cfa.go.jp/policies/kodomo-kosodate/jidouteate" target="_blank" rel="noopener">こども家庭庁 児童手当</a>／3歳未満15,000円、3歳〜18歳10,000円、第3子以降30,000円。2024年10月から所得制限なし</td></tr>
+          <tr><td>スマホ月額料金の平均</td><td class="n">3,997円</td><td><a href="https://www.m2ri.jp/release/detail.html?id=705" target="_blank" rel="noopener">MM総研 スマートフォンの月額利用料金（2025年）</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <b>この計算に入れていないもの：</b>印紙税、固定資産税、酒税、相続税、関税、事業者が納めて商品の価格に上乗せされている法人税など。
+    実際の負担はここに出る額より<b>さらに大きくなります</b>。<br>
+    <b>逆に、この計算が多めに出る場合：</b>ふるさと納税・医療費控除・住宅ローン控除・iDeCo・生命保険料控除・配偶者控除は考慮していません。これらがある方の税額はもう少し下がります。
+    児童手当などの給付も入れていません。<br>
+    <b>「残るお金」がマイナスになったら：</b>それは平均の支出に対して収入が足りていない、ということです。数字を自分の家のものに置き換えて確かめてみてください。<br>
+    入力した内容はこのブラウザの中だけに保存され、どこにも送信されません。
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORE_KEY = "kuni-receipt-v2";
+  var TODAY = "2026年9月7日";
+  var THIS_YEAR = 2026;
+  var THIS_MONTH = 9;
+
+  // ---------- 自動車税（種別割）年額 ----------
+  var CAR_TAX_NEW = { 1000:25000, 1500:30500, 2000:36000, 2500:43500, 3000:50000,
+                      3500:57000, 4000:65500, 4500:75500, 6000:87000, 9999:110000 };
+  var CAR_TAX_OLD = { 1000:29500, 1500:34500, 2000:39500, 2500:45000, 3000:51000,
+                      3500:58000, 4000:66500, 4500:76500, 6000:88000, 9999:111000 };
+  var CAR_TAX_13  = { 1000:33900, 1500:39600, 2000:45400, 2500:51700, 3000:58600,
+                      3500:66700, 4000:76400, 4500:87900, 6000:101200, 9999:127600 };
+  var KEI_TAX = { kei5:{ std:10800, old:7200, heavy:12900 },
+                  kei4:{ std:5000,  old:4000, heavy:6000  } };
+  var WEIGHT_RATE = { eco:2500, normal:4100, over13:5700, over18:6300 };
+  var KEI_WEIGHT  = { eco:2500, normal:3300, over13:4100, over18:4400 };
+
+  // 令和6年分の平均給与478万円の内訳は、給料・手当403万円＋賞与75万円。
+  // 年収を月給と賞与に分けるときは、この比率（84.3%）を使う。
+  var PAY_RATIO = 4030000 / 4780000;
+
+  /** 年収から「月の総支給」と「年間賞与」を求める */
+  function splitIncome(annual) {
+    var monthly = Math.round(annual * PAY_RATIO / 12 / 1000) * 1000;
+    return { monthly: monthly, bonus: Math.max(0, annual - monthly * 12) };
+  }
+
+  function $(id) { return document.getElementById(id); }
+  function num(id) { var v = parseFloat($(id).value); return isNaN(v) ? 0 : v; }
+  function yen(n) { return "¥" + Math.round(n).toLocaleString("ja-JP"); }
+
+  /** 給与所得控除（令和7年分以降） */
+  function salaryDeduction(annual) {
+    var d;
+    if (annual <= 1900000)      { return Math.min(annual, 650000); }
+    else if (annual <= 3600000) { d = annual * 0.3 + 80000; }
+    else if (annual <= 6600000) { d = annual * 0.2 + 440000; }
+    else if (annual <= 8500000) { d = annual * 0.1 + 1100000; }
+    else                        { d = 1950000; }
+    return Math.min(annual, Math.max(650000, d));
+  }
+
+  /** 所得税の速算表（年税額・復興特別所得税は別途） */
+  function incomeTaxFromTaxable(t) {
+    var b = [[1950000,0.05,0],[3300000,0.10,97500],[6950000,0.20,427500],
+             [9000000,0.23,636000],[18000000,0.33,1536000],
+             [40000000,0.40,2796000],[Infinity,0.45,4796000]];
+    for (var i = 0; i < b.length; i++) {
+      if (t <= b[i][0]) { return Math.max(0, t * b[i][1] - b[i][2]); }
+    }
+    return 0;
+  }
+
+  /** 税込みの支払額から、そこに含まれる消費税を取り出す */
+  function vatIn(amount, ratePercent) {
+    if (ratePercent <= 0 || amount <= 0) { return 0; }
+    return amount * ratePercent / (100 + ratePercent);
+  }
+
+  /**
+   * ひとり分の給与から、社会保険料・会社負担・所得税・住民税を求める。
+   * extraDeduct は配偶者控除・扶養控除の合計額（所得税用／住民税用）。
+   */
+  function payroll(gross, bonus, ageVal, extraDeductI, extraDeductR) {
+    var hasCare = (ageVal === "40to64");
+    var hasPension = (ageVal !== "over65");
+    var half = function (r) { return Math.floor(gross * (r / 100) / 2); };
+
+    var health  = half(num("rHealth"));
+    var care    = hasCare ? half(num("rCare")) : 0;
+    var support = half(num("rSupport"));
+    var pension = hasPension ? half(num("rPension")) : 0;
+    var emp     = Math.floor(gross * (num("rEmpW") / 100));
+    var mSocial = health + care + support + pension + emp;
+
+    var cEmp   = Math.floor(gross * (num("rEmpC") / 100));
+    var cRosai = Math.floor(gross * (num("rRosai") / 100));
+    var cKyo   = Math.floor(gross * (num("rKyoshutsu") / 100));
+    var mCompany = health + care + support + pension + cEmp + cRosai + cKyo;
+
+    var annualGross  = gross * 12 + bonus;
+    var annualSocial = mSocial * 12;
+    var salaryIncome = Math.max(0, annualGross - salaryDeduction(annualGross));
+
+    var taxableI = Math.max(0, salaryIncome - annualSocial - num("cBasicIncome") - extraDeductI);
+    var incomeTax = Math.floor(incomeTaxFromTaxable(taxableI) * 1.021);
+
+    var taxableR = Math.max(0, salaryIncome - annualSocial - num("cBasicResident") - extraDeductR);
+    var resident = taxableR > 0
+      ? Math.floor(taxableR * (num("rResident") / 100)) + Math.max(0, num("flatTax")) : 0;
+
+    return {
+      health:health, care:care, support:support, pension:pension, emp:emp,
+      annualGross:annualGross, annualSocial:annualSocial,
+      annualCompany:mCompany * 12, incomeTax:incomeTax, resident:resident
+    };
+  }
+
+  // ---------- レシートの行を組み立てる ----------
+  var lines;
+  function group(title, color) { lines.push({ t:"g", title:title, color:color }); }
+  function line(label, amount, note, faint) { lines.push({ t:"l", label:label, amount:amount, note:note || "", faint:!!faint }); }
+  function sub(label, amount) { lines.push({ t:"s", label:label, amount:amount }); }
+
+  function calc() {
+    lines = [];
+    var tax = 0, social = 0, levy = 0, spend = 0;   // すべて年額
+
+    // ============ 01 世帯の収入 ============
+    var kids   = Math.max(0, Math.round(num("kids")));
+    var kidsU3 = Math.min(kids, Math.max(0, Math.round(num("kidsU3"))));
+    var dep16  = Math.max(0, Math.round(num("dep16")));
+    var hasSpouse = $("hasSpouse").value === "1";
+
+    var gross  = Math.max(0, num("gross"));
+    var bonus  = Math.max(0, num("bonus"));
+    var gross2 = hasSpouse ? Math.max(0, num("gross2")) : 0;
+    var bonus2 = hasSpouse ? Math.max(0, num("bonus2")) : 0;
+
+    // 配偶者に収入がなければ、世帯主に配偶者控除がつく
+    var spouseIsDependent = hasSpouse && (gross2 * 12 + bonus2) === 0;
+    var deductI = dep16 * num("cDepI") + (spouseIsDependent ? num("cSpouseI") : 0);
+    var deductR = dep16 * num("cDepR") + (spouseIsDependent ? num("cSpouseR") : 0);
+
+    var p1 = payroll(gross, bonus, $("age").value, deductI, deductR);
+    var p2 = (gross2 + bonus2) > 0 ? payroll(gross2, bonus2, $("age2").value, 0, 0) : null;
+
+    var annualGross   = p1.annualGross   + (p2 ? p2.annualGross   : 0);
+    var annualSocial  = p1.annualSocial  + (p2 ? p2.annualSocial  : 0);
+    var annualCompany = p1.annualCompany + (p2 ? p2.annualCompany : 0);
+    var annualIncomeTax = p1.incomeTax + (p2 ? p2.incomeTax : 0);
+    var annualResident  = p1.resident  + (p2 ? p2.resident  : 0);
+    var realAnnual = annualGross + annualCompany;
+
+    $("income1").value = "年 " + yen(p1.annualGross);
+    $("income2").value = p2 ? "年 " + yen(p2.annualGross) : "収入なし";
+    $("gross2").disabled = !hasSpouse;
+    $("bonus2").disabled = !hasSpouse;
+    $("age2").disabled   = !hasSpouse;
+
+    group(p2 ? "給料から（世帯主＋配偶者）" : "給料から", "var(--hidden)");
+    line("健康保険料（本人分）", p1.health * 12 + (p2 ? p2.health * 12 : 0));
+    var careTotal = p1.care * 12 + (p2 ? p2.care * 12 : 0);
+    if (careTotal) { line("介護保険料（本人分）", careTotal); }
+    line("子ども・子育て支援金（本人分）", p1.support * 12 + (p2 ? p2.support * 12 : 0));
+    var penTotal = p1.pension * 12 + (p2 ? p2.pension * 12 : 0);
+    if (penTotal) { line("厚生年金保険料（本人分）", penTotal); }
+    line("雇用保険料（本人分）", p1.emp * 12 + (p2 ? p2.emp * 12 : 0));
+    line("所得税＋復興特別所得税", annualIncomeTax);
+    line("住民税（道民税＋市民税）", annualResident);
+    line("── 給与明細に載らない、会社が払っている分 ──", annualCompany, "", true);
+
+    var payTax = annualIncomeTax + annualResident;
+    var paySocial = annualSocial + annualCompany;
+    tax += payTax; social += paySocial;
+    sub("小計", payTax + paySocial);
+    $("sumPay").textContent = yen(payTax + paySocial);
+
+    var annualNet = annualGross - annualSocial - annualIncomeTax - annualResident;
+
+    // ---- 児童手当（戻ってくるお金） ----
+    var teate = 0;
+    for (var ki = 1; ki <= kids; ki++) {
+      if (ki >= 3) { teate += num("teate3rd"); }
+      else if (ki <= kidsU3) { teate += num("teate3"); }
+      else { teate += num("teateN"); }
+    }
+    teate = (teate + Math.max(0, num("teateOther"))) * 12;
+
+    // ============ 02 住まい・食費 ============
+    var vat = num("rVat"), vatFood = num("rVatFood");
+    var rent   = Math.max(0, num("rent")) * 12;
+    var food   = Math.max(0, num("food")) * 12;
+    var living = Math.max(0, num("living")) * 12;
+    var edu    = Math.max(0, num("edu")) * 12;
+
+    var vFood = vatIn(food, vatFood);
+    var vLiving = vatIn(living, vat);
+    var liveTax = vFood + vLiving;
+    var liveSpend = rent + food + living + edu - liveTax;
+
+    group("住まい・食費・生活費", "var(--minus)");
+    line("消費税（食料品 " + vatFood + "%）", vFood, "年 " + yen(food) + " の支払いに含まれる分");
+    line("消費税（日用品など " + vat + "%）", vLiving, "年 " + yen(living) + " の支払いに含まれる分");
+    line("家賃・住宅ローン", rent, "住宅の家賃は非課税", true);
+    line("教育費", edu, "学校の授業料は非課税", true);
+    line("食費・日用品（税を除いた分）", food + living - liveTax, "", true);
+    tax += liveTax; spend += liveSpend;
+    sub("うち税", liveTax);
+    $("sumLive").textContent = yen(rent + food + living + edu);
+
+    // ============ 03 電気・ガス・水道 ============
+    var elecYen = Math.max(0, num("elecYen")) * 12;
+    var kwhIn = Math.max(0, num("elecKwh"));
+    var unit = Math.max(1, num("elecUnit"));
+    var kwhMonth = kwhIn > 0 ? kwhIn : (elecYen / 12) / unit;
+    var gasYen = Math.max(0, num("gasYen")) * 12;
+    var waterYen = Math.max(0, num("waterYen")) * 12;
+
+    var saiene = kwhMonth * 12 * num("rSaiene");
+    var dengen = kwhMonth * 12 * num("rDengen");
+    var vElec = vatIn(elecYen, vat), vGas = vatIn(gasYen, vat), vWater = vatIn(waterYen, vat);
+
+    group("電気・ガス・水道", "var(--levy)");
+    line("再生可能エネルギー発電促進賦課金", saiene,
+         Math.round(kwhMonth) + " kWh/月 × " + num("rSaiene") + "円 × 12ヶ月");
+    line("電源開発促進税", dengen, "明細に表示されない");
+    line("電気・ガス・水道の消費税", vElec + vGas + vWater);
+    line("電気・ガス・水道の本体（税を除く）", elecYen + gasYen + waterYen - vElec - vGas - vWater, "", true);
+    var utilTax = dengen + vElec + vGas + vWater;
+    // 再エネ賦課金は電気代のなかに含まれているので、生活費からは差し引く
+    var utilSpend = elecYen + gasYen + waterYen - utilTax - saiene;
+    levy += saiene; tax += utilTax; spend += utilSpend;
+    sub("うち税・賦課金", saiene + utilTax);
+    $("sumUtil").textContent = yen(saiene + utilTax);
+
+    // ============ 04 通信 ============
+    var comm = (Math.max(0, num("phoneYen")) + Math.max(0, num("netYen")) +
+                Math.max(0, num("nhkYen")) + Math.max(0, num("subsYen"))) * 12;
+    var vComm = vatIn(comm, vat);
+    group("スマホ・インターネット", "var(--minus)");
+    line("通信費の消費税", vComm, "年 " + yen(comm) + " の支払いに含まれる分");
+    line("通信費の本体（税を除く）", comm - vComm, "", true);
+    tax += vComm; spend += comm - vComm;
+    sub("うち税", vComm);
+    $("sumComm").textContent = yen(vComm);
+
+    // ============ 05 保険 ============
+    var ins = (Math.max(0, num("lifeIns")) + Math.max(0, num("otherIns"))) * 12;
+    group("保険（税ではない）", "var(--spend)");
+    line("生命保険・医療保険・火災保険", ins, "保険料に消費税はかからない", true);
+    spend += ins;
+    sub("うち税", 0);
+    $("sumIns").textContent = yen(ins);
+
+    // ============ 06 車 ============
+    var carTax = 0, carSpend = 0;
+    if ($("hasCar").checked) {
+      var type = $("carType").value;
+      var cc = parseInt($("carCc").value, 10);
+      var weight = parseFloat($("carWeight").value);
+      var year = Math.round(num("carYear"));
+      var month = parseInt($("carMonth").value, 10);
+      var eco = $("carEco").value === "1";
+
+      var elapsed = THIS_YEAR - year - (month > THIS_MONTH ? 1 : 0);
+      var over13 = elapsed >= 13, over18 = elapsed >= 18;
+      var afterOct2019 = (year > 2019) || (year === 2019 && month >= 10);
+      var afterApr2015 = (year > 2015) || (year === 2015 && month >= 4);
+
+      var shubetsu, shubetsuNote;
+      if (type === "normal") {
+        if (over13) { shubetsu = CAR_TAX_13[cc]; shubetsuNote = "13年超のため約15%の重課"; }
+        else if (afterOct2019) { shubetsu = CAR_TAX_NEW[cc]; shubetsuNote = "2019年10月以降の登録（引下げ後の税率）"; }
+        else { shubetsu = CAR_TAX_OLD[cc]; shubetsuNote = "2019年9月以前の登録"; }
+        group("車（普通車）", "var(--minus)");
+        line("自動車税（種別割）", shubetsu, shubetsuNote);
+      } else {
+        var kt = KEI_TAX[type];
+        if (over13) { shubetsu = kt.heavy; shubetsuNote = "13年超のため約20%の重課"; }
+        else if (afterApr2015) { shubetsu = kt.std; shubetsuNote = "2015年4月以降の新規検査"; }
+        else { shubetsu = kt.old; shubetsuNote = "2015年3月以前の新規検査"; }
+        group("車（軽自動車）", "var(--minus)");
+        line("軽自動車税（種別割）", shubetsu, shubetsuNote);
+      }
+
+      var wTax, wNote;
+      if (type === "normal") {
+        var wr = eco ? WEIGHT_RATE.eco : (over18 ? WEIGHT_RATE.over18 : (over13 ? WEIGHT_RATE.over13 : WEIGHT_RATE.normal));
+        wTax = wr * (weight / 0.5);
+        wNote = "0.5tあたり年 " + wr.toLocaleString("ja-JP") + "円 × " + weight + "t";
+      } else {
+        wTax = eco ? KEI_WEIGHT.eco : (over18 ? KEI_WEIGHT.over18 : (over13 ? KEI_WEIGHT.over13 : KEI_WEIGHT.normal));
+        wNote = "軽自動車の定額";
+      }
+      line("自動車重量税", wTax, wNote + "（車検2年分を年換算）");
+
+      var km = Math.max(0, num("carKm"));
+      var nenpi = Math.max(0.1, num("carNenpi"));
+      var price = Math.max(0, num("fuelPrice"));
+      var liters = km / nenpi;
+      var fuelSpend = liters * price;
+      var isDiesel = $("fuelType").value === "diesel";
+
+      var fTax, fLabel, fVat;
+      if (isDiesel) {
+        fTax = liters * (num("rDiesel") + num("rSekitan"));
+        fLabel = "軽油引取税＋石油石炭税";
+        fVat = vatIn(Math.max(0, fuelSpend - liters * num("rDiesel")), vat);
+      } else {
+        fTax = liters * (num("rGasoline") + num("rSekitan"));
+        fLabel = "ガソリン税＋石油石炭税";
+        fVat = vatIn(fuelSpend, vat);
+      }
+      line(fLabel, fTax, Math.round(liters).toLocaleString("ja-JP") + " L/年");
+      line("燃料代の消費税", fVat, isDiesel ? "軽油引取税分を除いた額に課税" : "ガソリン税を含んだ価格に課税");
+
+      var carIns = Math.max(0, num("carIns"));
+      var jibai  = Math.max(0, num("carJibai"));
+      var shaken = Math.max(0, num("carShaken"));
+      var park   = Math.max(0, num("carPark")) * 12;
+      var vShaken = vatIn(shaken, vat), vPark = vatIn(park, vat);
+      line("車検の整備費・駐車場代の消費税", vShaken + vPark);
+      line("任意保険・自賠責", carIns + jibai, "税ではなく保険料", true);
+      line("燃料・車検・駐車場（税を除く）", (fuelSpend - fTax - fVat) + (shaken - vShaken) + (park - vPark), "", true);
+
+      carTax = shubetsu + wTax + fTax + fVat + vShaken + vPark;
+      carSpend = (fuelSpend - fTax - fVat) + carIns + jibai + (shaken - vShaken) + (park - vPark);
+      tax += carTax; spend += carSpend;
+      sub("うち税", carTax);
+    }
+    $("sumCar").textContent = yen(carTax);
+
+    // ============ 07 その他 ============
+    var boxes = Math.max(0, num("smokeBox"));
+    var smoke = boxes * 365 * Math.max(0, num("smokeTax"));
+    var otherYen = Math.max(0, num("otherYen"));
+    var otherLabel = $("otherLabel").value.trim() || "自分で足した税";
+    var otherTotal = smoke + otherYen;
+    if (otherTotal > 0) {
+      group("その他", "var(--minus)");
+      if (smoke > 0) { line("たばこ税（国＋地方）", smoke, boxes + "箱/日 × 365日"); }
+      if (otherYen > 0) { line(otherLabel, otherYen); }
+      tax += otherTotal;
+      sub("小計", otherTotal);
+    }
+    $("sumOther").textContent = yen(otherTotal);
+
+    // ============ 合計 ============
+    if (teate > 0) {
+      group("戻ってくるお金", "var(--plus-ink)");
+      line("児童手当・その他の手当", teate,
+           "子ども" + kids + "人" + (kidsU3 ? "（うち3歳未満" + kidsU3 + "人）" : "") +
+           (num("teateOther") > 0 ? "＋その他の手当 月" + yen(num("teateOther")) : "・所得制限なし"));
+      sub("小計", teate);
+    }
+
+    var toState = tax + social + levy;
+    var income = realAnnual + teate;                 // 世帯に入ってくる総額
+    var left = income - toState - spend;
+    var pct = income > 0 ? (toState / income * 100) : 0;
+    var netState = toState - teate;                  // 差引で国に渡した額
+
+    render();
+
+    $("hReal").textContent = yen(income);
+    $("hRealSub").textContent = "1日あたり " + yen(income / 365) + "　／　月あたり " + yen(income / 12) +
+      "（会社が払う総額 " + yen(realAnnual) + (teate > 0 ? " ＋ 児童手当 " + yen(teate) : "") + "）";
+    $("hTax").textContent = yen(toState);
+    $("hTaxSub").textContent = "1日あたり " + yen(toState / 365) + "　／　入ってくる総額の " + pct.toFixed(1) + "%" +
+      (teate > 0 ? "　／　児童手当を差し引くと " + yen(netState) : "");
+    $("hLeft").textContent = yen(left);
+    $("hLeftSub").textContent = left >= 0
+      ? "1日あたり " + yen(left / 365) + "　／　月あたり " + yen(left / 12) + "（生活費を払ったあと）"
+      : "1日あたり " + yen(left / 365) + " の赤字。貯金を取り崩すか、どこかを削ることになります。";
+    $("hLeft").style.color = left >= 0 ? "var(--plus-ink)" : "var(--minus)";
+
+    var bar = $("hBar");
+    bar.textContent = "";
+    [[tax,"var(--minus)"],[social,"var(--hidden)"],[levy,"var(--levy)"],
+     [spend,"var(--spend)"],[Math.max(0,left),"var(--plus-ink)"]].forEach(function (seg) {
+      if (seg[0] <= 0 || income <= 0) { return; }
+      var s = document.createElement("span");
+      s.style.width = (seg[0] / income * 100) + "%";
+      s.style.background = seg[1];
+      bar.appendChild(s);
+    });
+
+    $("rMeta").textContent = TODAY + " 時点の税率で計算した概算";
+    $("rFine").textContent =
+      "国・自治体へ " + yen(toState) + "（税 " + yen(tax) + "／社会保険料 " + yen(social) +
+      "／賦課金 " + yen(levy) + "）。" + (teate > 0 ? "児童手当 " + yen(teate) + " が戻り、差引 " + yen(netState) + "。" : "") +
+      "生活費（税を除く）" + yen(spend) + "。残り " + yen(left) + "。" +
+      "社会保険料は税ではありませんが、断ることができない負担なので合計に入れています。" +
+      "会社負担分と児童手当を含めた「世帯に入ってくる総額」を分母にしています。";
+
+    var days = Math.max(0, Math.min(365, Math.round(pct / 100 * 365)));
+    $("fDays").textContent = days;
+    var d = new Date(2026, 0, 1);
+    d.setDate(d.getDate() + days);
+    $("fDate").textContent =
+      "1月1日から働きはじめて " + (d.getMonth() + 1) + "月" + d.getDate() + "日まで、" +
+      "稼いだお金はすべて税と社会保険料に消えます。自分のために働きはじめるのは、その翌日からです。";
+
+    $("fDaily").textContent =
+      "1日で見ると、入ってくるのが " + yen(income / 365) + "。そのうち " + yen(toState / 365) +
+      " が国と自治体へ、" + yen(spend / 365) + " が生活費に消えて、手元に残るのは " + yen(left / 365) + " です。";
+  }
+
+  function render() {
+    var host = $("rBody");
+    host.textContent = "";
+    lines.forEach(function (item) {
+      if (item.t === "g") {
+        var wrap = document.createElement("div");
+        wrap.className = "r-group";
+        var title = document.createElement("div");
+        title.className = "r-group-title";
+        var dot = document.createElement("span");
+        dot.className = "r-dot";
+        dot.style.background = item.color;
+        title.appendChild(dot);
+        title.appendChild(document.createTextNode(item.title));
+        wrap.appendChild(title);
+        host.appendChild(wrap);
+        return;
+      }
+      if (item.t === "s") {
+        var s = document.createElement("div");
+        s.className = "r-sub";
+        var sl = document.createElement("span"); sl.textContent = item.label;
+        var sa = document.createElement("span"); sa.textContent = yen(item.amount);
+        s.appendChild(sl); s.appendChild(sa);
+        host.appendChild(s);
+        var hr = document.createElement("hr");
+        hr.className = "r-sep";
+        host.appendChild(hr);
+        return;
+      }
+      var el = document.createElement("div");
+      el.className = "r-line" + (item.faint ? " faint" : "");
+      var lab = document.createElement("span"); lab.className = "lab"; lab.textContent = item.label;
+      var lead = document.createElement("span"); lead.className = "lead";
+      var amt = document.createElement("span"); amt.className = "amt"; amt.textContent = yen(item.amount);
+      el.appendChild(lab); el.appendChild(lead); el.appendChild(amt);
+      host.appendChild(el);
+      if (item.note) {
+        var n = document.createElement("div");
+        n.className = "r-note";
+        n.textContent = item.note;
+        host.appendChild(n);
+      }
+    });
+  }
+
+  // ---------- モデル ----------
+  var PRESETS = {
+    young: {
+      note: "25〜29歳の平均給与は407万円（国税庁・令和6年分）。20〜24歳だと277万円まで下がります。生活費は単身勤労者世帯の平均（消費支出 月約19.2万円・食費45,800円／家計調査 2025年平均）。任意保険は全年齢の平均51,059円を入れていますが、20代は等級が低いので実際はこれより高くなります。",
+      v: { gross:286000, bonus:638000, age:"under40", gross2:0, bonus2:0, age2:"under40",
+           hasSpouse:"0", kids:0, kidsU3:0, dep16:0,
+           rent:55000, food:44000, living:40000, edu:0,
+           elecYen:6500, elecKwh:0, gasYen:3500, waterYen:2500,
+           phoneYen:4000, netYen:4500, nhkYen:1100, subsYen:1500,
+           lifeIns:5000, otherIns:800,
+           carType:"kei5", carCc:"1500", carWeight:"1.0", carYear:2018, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:6000, carNenpi:18, fuelPrice:155,
+           carIns:51059, carJibai:8760, carShaken:30000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 }
+    },
+    avg: {
+      note: "1年勤めた人の平均給与478万円（国税庁・令和6年分）。内訳は給料・手当403万円＋賞与75万円なので、月33.6万円＋賞与74.8万円に分けています。男性は587万円、女性は333万円、正社員は545万円、正社員以外は206万円です。生活費は単身勤労者世帯の平均。",
+      v: { gross:336000, bonus:748000, age:"40to64", gross2:0, bonus2:0, age2:"40to64",
+           hasSpouse:"0", kids:0, kidsU3:0, dep16:0,
+           rent:60000, food:46000, living:45000, edu:0,
+           elecYen:6500, elecKwh:0, gasYen:3500, waterYen:2500,
+           phoneYen:4000, netYen:4500, nhkYen:1100, subsYen:1500,
+           lifeIns:8000, otherIns:800,
+           carType:"kei5", carCc:"1500", carWeight:"1.0", carYear:2018, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:6000, carNenpi:18, fuelPrice:155,
+           carIns:51059, carJibai:8760, carShaken:30000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 }
+    },
+    couple: {
+      note: "35〜39歳の男性の平均給与574万円（国税庁・令和6年分）を世帯主が稼ぎ、配偶者に収入がない世帯です（配偶者控除が入ります）。光熱・水道は二人以上世帯の平均（電気10,962／ガス4,161／上下水道3,941円）、生命保険は夫婦のみ40歳未満の平均 年21.0万円、任意保険は小型乗用の平均55,404円。",
+      v: { gross:403000, bonus:904000, age:"40to64", gross2:0, bonus2:0, age2:"40to64",
+           hasSpouse:"1", kids:0, kidsU3:0, dep16:0,
+           rent:70000, food:70000, living:50000, edu:0,
+           elecYen:11000, elecKwh:0, gasYen:4200, waterYen:3900,
+           phoneYen:8000, netYen:5000, nhkYen:1100, subsYen:1500,
+           lifeIns:17500, otherIns:1500,
+           carType:"normal", carCc:"1500", carWeight:"1.5", carYear:2016, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:8000, carNenpi:14, fuelPrice:155,
+           carIns:55404, carJibai:8760, carShaken:40000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 }
+    },
+    family: {
+      note: "世帯主は40〜44歳の平均給与516万円、配偶者は35〜39歳女性の平均351万円、合わせて867万円。厚生労働省の2025年調査では児童のいる世帯の平均所得は857.3万円、平均児童数は1.68人なので、ほぼ実態どおりの世帯です。生命保険は二人以上世帯の平均 年35.3万円、任意保険は普通乗用の平均75,267円。子どもは2人（どちらも3歳以上・16歳未満）。",
+      v: { gross:363000, bonus:804000, age:"40to64", gross2:247000, bonus2:546000, age2:"40to64",
+           hasSpouse:"1", kids:2, kidsU3:0, dep16:0,
+           rent:85000, food:95000, living:75000, edu:25000,
+           elecYen:12500, elecKwh:0, gasYen:4800, waterYen:4500,
+           phoneYen:11000, netYen:5000, nhkYen:1100, subsYen:2000,
+           lifeIns:29400, otherIns:1800,
+           carType:"normal", carCc:"2000", carWeight:"1.5", carYear:2016, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:10000, carNenpi:12, fuelPrice:155,
+           carIns:75267, carJibai:8760, carShaken:45000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 }
+    },
+    single_parent: {
+      note: "母子世帯の母の平均年間就労収入は236万円（父子世帯の父は496万円）。全国ひとり親世帯等調査・令和3年度の数字です。児童扶養手当は所得で変わり、この収入だと一部支給になるため、概算で月32,000円を入れています（全部支給なら48,050円、下限は11,340円）。必ず市区町村の通知書の額に置き換えてください。",
+      v: { gross:166000, bonus:368000, age:"under40", gross2:0, bonus2:0, age2:"under40",
+           hasSpouse:"0", kids:1, kidsU3:0, dep16:0,
+           rent:50000, food:50000, living:35000, edu:5000,
+           elecYen:9000, elecKwh:0, gasYen:3800, waterYen:3200,
+           phoneYen:6000, netYen:4500, nhkYen:1100, subsYen:500,
+           lifeIns:8000, otherIns:800,
+           carType:"kei5", carCc:"1500", carWeight:"1.0", carYear:2014, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:6000, carNenpi:18, fuelPrice:155,
+           carIns:51059, carJibai:8760, carShaken:25000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:32000 }
+    },
+    tight: {
+      note: "平均に届かない世帯です。世帯主だけが月30万円・賞与なし（年360万円）で働き、子どもが1人。世帯所得の中央値は451万円、生活が「苦しい」と答えた世帯は55.4%（厚生労働省・2025年）。光熱費・通信費・保険料・車の費用は平均のままにして、家賃・食費・日用品を切り詰めた場合を見てください。",
+      v: { gross:300000, bonus:0, age:"40to64", gross2:0, bonus2:0, age2:"40to64",
+           hasSpouse:"1", kids:1, kidsU3:0, dep16:0,
+           rent:62000, food:72000, living:38000, edu:10000,
+           elecYen:12500, elecKwh:0, gasYen:4800, waterYen:4500,
+           phoneYen:9000, netYen:5000, nhkYen:1100, subsYen:1500,
+           lifeIns:29400, otherIns:1800,
+           carType:"normal", carCc:"1500", carWeight:"1.5", carYear:2016, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:8000, carNenpi:14, fuelPrice:155,
+           carIns:55404, carJibai:8760, carShaken:40000, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 }
+    },
+    clear: {
+      note: "すべて0にしました。給与明細と請求書を見ながら、自分の家の数字を入れてください。年収がすぐ出てこないときは「平均年収から入れる」で年齢層を選べば、月給と賞与に自動で分かれます。税率と手当の額は初期値のまま残してあります。",
+      v: { gross:0, bonus:0, age:"under40", gross2:0, bonus2:0, age2:"under40",
+           hasSpouse:"0", kids:0, kidsU3:0, dep16:0,
+           rent:0, food:0, living:0, edu:0,
+           elecYen:0, elecKwh:0, gasYen:0, waterYen:0,
+           phoneYen:0, netYen:0, nhkYen:0, subsYen:0,
+           lifeIns:0, otherIns:0,
+           carType:"normal", carCc:"1500", carWeight:"1.5", carYear:2020, carMonth:"4",
+           carEco:"0", fuelType:"gas", carKm:0, carNenpi:14, fuelPrice:155,
+           carIns:0, carJibai:0, carShaken:0, carPark:0,
+           smokeBox:0, otherYen:0, teateOther:0 },
+      noCar: true
+    }
+  };
+
+  function applyPreset(name) {
+    var p = PRESETS[name];
+    if (!p) { return; }
+    Object.keys(p.v).forEach(function (id) {
+      if ($(id)) { $(id).value = p.v[id]; }
+    });
+    $("hasCar").checked = !p.noCar;
+    $("otherLabel").value = "";
+    $("presetNote").textContent = p.note;
+    [["auto1", "gross", "bonus"], ["auto2", "gross2", "bonus2"]].forEach(function (t) {
+    $(t[0]).addEventListener("change", function () {
+      var v = parseFloat($(t[0]).value);
+      if (isNaN(v) || v <= 0) { return; }
+      var sp = splitIncome(v);
+      $(t[1]).value = sp.monthly;
+      $(t[2]).value = sp.bonus;
+      $(t[0]).value = "";
+      if (t[0] === "auto2") { $("hasSpouse").value = "1"; }
+      document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      $("presetNote").textContent = "自分で入力した数字を表示しています。";
+      syncCarFields(); calc(); save("");
+    });
+  });
+
+  document.querySelectorAll(".pbtn").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.preset === name));
+    });
+    syncCarFields();
+    calc();
+    save(name);
+  }
+
+  function syncCarFields() {
+    var on = $("hasCar").checked;
+    $("carFields").style.opacity = on ? "1" : ".42";
+    $("carFields").querySelectorAll("input, select").forEach(function (n) { n.disabled = !on; });
+    var isKei = $("carType").value !== "normal";
+    $("ccWrap").hidden = isKei;
+    $("weightWrap").hidden = isKei;
+  }
+
+  // ---------- 保存・復元 ----------
+  var ids = ["gross","bonus","age","gross2","bonus2","age2","hasSpouse","kids","kidsU3","dep16","rHealth","rCare","rSupport","rPension","rEmpW","rEmpC",
+    "rRosai","rKyoshutsu","cBasicIncome","cBasicResident","cSpouseI","cSpouseR","cDepI","cDepR","rResident","flatTax",
+    "rent","food","living","edu","rVat","rVatFood",
+    "elecYen","elecKwh","gasYen","waterYen","rSaiene","rDengen","elecUnit",
+    "phoneYen","netYen","nhkYen","subsYen","lifeIns","otherIns",
+    "carType","carCc","carWeight","carYear","carMonth","carEco","fuelType","carKm","carNenpi",
+    "fuelPrice","carIns","carJibai","carShaken","carPark","rGasoline","rDiesel","rSekitan",
+    "smokeBox","smokeTax","otherLabel","otherYen","teate3","teateN","teate3rd","teateOther"];
+
+  function save(presetName) {
+    try {
+      var data = { hasCar: $("hasCar").checked };
+      if (presetName) { data.__preset = presetName; }
+      else {
+        var cur = document.querySelector('.pbtn[aria-pressed="true"]');
+        data.__preset = cur ? cur.dataset.preset : "";
+      }
+      ids.forEach(function (id) { data[id] = $(id).value; });
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    } catch (e) { /* プライベートモードなどでは保存できない */ }
+  }
+
+  function restore() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) { return false; }
+      var data = JSON.parse(raw);
+      ids.forEach(function (id) {
+        if (typeof data[id] === "string" && $(id)) { $(id).value = data[id]; }
+      });
+      if (typeof data.hasCar === "boolean") { $("hasCar").checked = data.hasCar; }
+      if (data.__preset && PRESETS[data.__preset]) {
+        $("presetNote").textContent = PRESETS[data.__preset].note;
+        [["auto1", "gross", "bonus"], ["auto2", "gross2", "bonus2"]].forEach(function (t) {
+    $(t[0]).addEventListener("change", function () {
+      var v = parseFloat($(t[0]).value);
+      if (isNaN(v) || v <= 0) { return; }
+      var sp = splitIncome(v);
+      $(t[1]).value = sp.monthly;
+      $(t[2]).value = sp.bonus;
+      $(t[0]).value = "";
+      if (t[0] === "auto2") { $("hasSpouse").value = "1"; }
+      document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      $("presetNote").textContent = "自分で入力した数字を表示しています。";
+      syncCarFields(); calc(); save("");
+    });
+  });
+
+  document.querySelectorAll(".pbtn").forEach(function (b) {
+          b.setAttribute("aria-pressed", String(b.dataset.preset === data.__preset));
+        });
+      } else {
+        $("presetNote").textContent = "自分で入力した数字を表示しています。";
+        [["auto1", "gross", "bonus"], ["auto2", "gross2", "bonus2"]].forEach(function (t) {
+    $(t[0]).addEventListener("change", function () {
+      var v = parseFloat($(t[0]).value);
+      if (isNaN(v) || v <= 0) { return; }
+      var sp = splitIncome(v);
+      $(t[1]).value = sp.monthly;
+      $(t[2]).value = sp.bonus;
+      $(t[0]).value = "";
+      if (t[0] === "auto2") { $("hasSpouse").value = "1"; }
+      document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      $("presetNote").textContent = "自分で入力した数字を表示しています。";
+      syncCarFields(); calc(); save("");
+    });
+  });
+
+  document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  [["auto1", "gross", "bonus"], ["auto2", "gross2", "bonus2"]].forEach(function (t) {
+    $(t[0]).addEventListener("change", function () {
+      var v = parseFloat($(t[0]).value);
+      if (isNaN(v) || v <= 0) { return; }
+      var sp = splitIncome(v);
+      $(t[1]).value = sp.monthly;
+      $(t[2]).value = sp.bonus;
+      $(t[0]).value = "";
+      if (t[0] === "auto2") { $("hasSpouse").value = "1"; }
+      document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      $("presetNote").textContent = "自分で入力した数字を表示しています。";
+      syncCarFields(); calc(); save("");
+    });
+  });
+
+  document.querySelectorAll(".pbtn").forEach(function (b) {
+    b.addEventListener("click", function () {
+      applyPreset(b.dataset.preset);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  if (restore()) {
+    syncCarFields();
+    calc();
+  } else {
+    applyPreset("avg");
+  }
+
+  ids.concat(["hasCar"]).forEach(function (id) {
+    var handler = function () {
+      [["auto1", "gross", "bonus"], ["auto2", "gross2", "bonus2"]].forEach(function (t) {
+    $(t[0]).addEventListener("change", function () {
+      var v = parseFloat($(t[0]).value);
+      if (isNaN(v) || v <= 0) { return; }
+      var sp = splitIncome(v);
+      $(t[1]).value = sp.monthly;
+      $(t[2]).value = sp.bonus;
+      $(t[0]).value = "";
+      if (t[0] === "auto2") { $("hasSpouse").value = "1"; }
+      document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      $("presetNote").textContent = "自分で入力した数字を表示しています。";
+      syncCarFields(); calc(); save("");
+    });
+  });
+
+  document.querySelectorAll(".pbtn").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      syncCarFields(); calc(); save("");
+    };
+    $(id).addEventListener("input", handler);
+    $(id).addEventListener("change", handler);
+  });
+})();
+</script>
+</body>
+</html>
