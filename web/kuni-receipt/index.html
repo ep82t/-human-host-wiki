@@ -589,8 +589,10 @@
             <div class="f"><label for="carType">車種</label>
               <select id="carType">
                 <option value="normal" selected>普通車・小型車（白ナンバー）</option>
-                <option value="kei5">軽自動車 乗用（5ナンバー）</option>
-                <option value="kei4">軽自動車 貨物（4ナンバー）</option>
+                <option value="kei5">軽 乗用・自家用（5ナンバー）　年10,800円</option>
+                <option value="kei4">軽 貨物・自家用（4ナンバー）　年5,000円</option>
+                <option value="kei5b">軽 乗用・営業用（黒ナンバー）　年6,900円</option>
+                <option value="kei4b">軽 貨物・営業用（黒ナンバー）　年3,800円</option>
               </select>
             </div>
             <div class="f" id="ccWrap"><label for="carCc">排気量</label>
@@ -646,6 +648,11 @@
             <div class="f"><label for="carShaken">車検の整備費用（年換算）</label><input type="number" id="carShaken" value="40000" min="0" step="5000" inputmode="numeric"></div>
             <div class="f"><label for="carPark">駐車場代（月）</label><input type="number" id="carPark" value="0" min="0" step="1000" inputmode="numeric"></div>
             <div class="hint wide">
+              <b>軽の4ナンバーと5ナンバーでは、軽自動車税が倍以上ちがいます。</b>
+              5ナンバー（乗用）は年10,800円、4ナンバー（貨物）は年5,000円。13年を超えると12,900円と6,000円になります。
+              5ナンバーは排気量で、4ナンバーは最大積載量で区分されるためです。
+              ただし<b>重量税はどちらも同じ</b>（自家用で年3,300円）で、ここは変わりません。
+              宅配などの営業用（黒ナンバー）はさらに安く、乗用6,900円・貨物3,800円です。<br>
               任意保険の平均は<b>軽 51,059円／小型乗用 55,404円／普通乗用 75,267円</b>（損害保険料率算出機構・2024年度契約）。<br>
               13年を超えると自動車税は約15%、重量税は約39%上がります（軽は約20%）。18年超で重量税はさらに上がります。
               自賠責・任意保険は<b>税ではなく保険料</b>なので、レシートでは分けています。
@@ -744,8 +751,8 @@
           <tr><td>ガソリン税（本則）</td><td class="n">28.7円/L</td><td><a href="https://www.enecho.meti.go.jp/about/special/johoteikyo/zanteizeiritsu.html" target="_blank" rel="noopener">資源エネルギー庁 暫定税率の廃止</a>／暫定税率25.1円は2025年12月31日廃止</td></tr>
           <tr><td>軽油引取税（本則）</td><td class="n">15.0円/L</td><td>同上／暫定分17.1円は2026年4月1日廃止。軽油引取税は消費税の課税対象外</td></tr>
           <tr><td>自動車税（種別割）</td><td class="n">排気量別</td><td><a href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/131410.html" target="_blank" rel="noopener">総務省 2019年10月の自動車税制改正</a>／13年超は約15%重課</td></tr>
-          <tr><td>軽自動車税（種別割）</td><td class="n">10,800円 ほか</td><td><a href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/102384.html" target="_blank" rel="noopener">総務省 軽自動車税の税率</a>／2015年3月以前の新規検査は7,200円、13年超は12,900円</td></tr>
-          <tr><td>自動車重量税</td><td class="n">0.5tあたり年4,100円</td><td><a href="https://www.mof.go.jp/tax_policy/summary/consumption/131.pdf" target="_blank" rel="noopener">財務省 自動車重量税の概要</a>／13年超5,700円・18年超6,300円。車検2年分を年換算</td></tr>
+          <tr><td>軽自動車税（種別割）</td><td class="n">5,000〜12,900円</td><td><a href="https://www.soumu.go.jp/main_content/000403499.pdf" target="_blank" rel="noopener">総務省 三輪及び四輪以上の軽自動車の税率区分早見表</a>／四輪の年額。<b>乗用自家用（5ナンバー）</b>10,800円・旧税率7,200円・13年超12,900円。<b>貨物自家用（4ナンバー）</b>5,000円・旧4,000円・13年超6,000円。<b>乗用営業用</b>6,900円・旧5,500円・13年超8,200円。<b>貨物営業用</b>3,800円・旧3,000円・13年超4,500円。旧税率は2015年3月以前に新規検査を受けた車</td></tr>
+          <tr><td>自動車重量税</td><td class="n">0.5tあたり年4,100円</td><td><a href="https://www.mof.go.jp/tax_policy/summary/consumption/131.pdf" target="_blank" rel="noopener">財務省 自動車重量税の概要</a>／普通車はエコカー以外の当分の間税率。13年超5,700円・18年超6,300円。<b>軽自動車は乗用・貨物とも一律</b>で年3,300円（13年超4,100円・18年超4,400円）。車検2年分を年換算</td></tr>
           <tr><td>基礎控除（所得税）</td><td class="n">95万円</td><td><a href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm" target="_blank" rel="noopener">国税庁 基礎控除</a>／令和7・8年分の上乗せ特例</td></tr>
           <tr><td>生活費の平均（世帯人数別）</td><td class="n">月31.4万円ほか</td><td><a href="https://www.stat.go.jp/data/kakei/sokuhou/tsuki/index.html" target="_blank" rel="noopener">総務省統計局 家計調査 2025年平均</a>／二人以上の世帯の消費支出は月314,001円、単身勤労者世帯は約191,500円</td></tr>
           <tr><td>電気代・ガス代・上下水道料の平均</td><td class="n">10,962／4,161／3,941円</td><td>同上（家計調査 2025年）／光熱・水道の合計は月24,547円</td></tr>
@@ -793,8 +800,14 @@
                       3500:58000, 4000:66500, 4500:76500, 6000:88000, 9999:111000 };
   var CAR_TAX_13  = { 1000:33900, 1500:39600, 2000:45400, 2500:51700, 3000:58600,
                       3500:66700, 4000:76400, 4500:87900, 6000:101200, 9999:127600 };
-  var KEI_TAX = { kei5:{ std:10800, old:7200, heavy:12900 },
-                  kei4:{ std:5000,  old:4000, heavy:6000  } };
+  // 軽自動車税（種別割）の年額。用途とナンバーで大きく変わる。
+  // std = 2015年4月以降の新規検査／old = 2015年3月以前／heavy = 初度検査から13年超
+  var KEI_TAX = {
+    kei5:  { std:10800, old:7200, heavy:12900 },  // 乗用 自家用（5ナンバー）
+    kei4:  { std:5000,  old:4000, heavy:6000  },  // 貨物 自家用（4ナンバー）
+    kei5b: { std:6900,  old:5500, heavy:8200  },  // 乗用 営業用（黒ナンバー）
+    kei4b: { std:3800,  old:3000, heavy:4500  }   // 貨物 営業用（黒ナンバー）
+  };
   var WEIGHT_RATE = { eco:2500, normal:4100, over13:5700, over18:6300 };
   var KEI_WEIGHT  = { eco:2500, normal:3300, over13:4100, over18:4400 };
 
