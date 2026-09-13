@@ -122,6 +122,73 @@
   .pbtn.clear b { color: var(--minus); }
 
   /* ---------- 見出し数字 ---------- */
+  /* 上から下へ足し引きする1本の帳簿。横に並べると関係が見えないため。 */
+  .ledger {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 5px;
+    box-shadow: var(--shadow); padding: 20px 18px 18px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  @media (min-width: 700px) { .ledger { padding: 24px 26px 22px; } }
+  .led-group { display: flex; flex-direction: column; gap: 2px; }
+  .led-head {
+    font-size: 12.5px; font-weight: 700; letter-spacing: .09em; color: var(--ink-soft);
+    display: flex; align-items: center; gap: 8px; padding-bottom: 7px;
+  }
+  .led-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .led-dot.in   { background: var(--accent); }
+  .led-dot.out  { background: var(--minus); }
+  .led-dot.live { background: var(--spend); }
+
+  .led-row, .led-sum, .led-final {
+    display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px;
+    align-items: baseline; padding: 6px 0;
+  }
+  .led-row .l { font-size: 14.5px; }
+  .led-row .l em {
+    display: block; font-style: normal; font-size: 12px; color: var(--ink-faint); line-height: 1.6;
+  }
+  .led-row .v { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+                font-size: 17px; text-align: right; white-space: nowrap; }
+
+  .led-sum {
+    border-top: 1px solid var(--rule); margin-top: 5px; padding-top: 10px;
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+  .led-sum .l { font-size: 14.5px; font-weight: 700; }
+  .led-sum .v { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+                font-size: clamp(21px, 5vw, 25px); font-weight: 600; text-align: right;
+                letter-spacing: -.02em; white-space: nowrap; }
+  .led-sum.income .v { color: var(--accent); }
+  .led-sum.out .v { color: var(--minus); }
+  .led-sum .pct {
+    grid-column: 2; font-family: "IBM Plex Mono", monospace; font-size: 12.5px;
+    color: var(--ink-faint); text-align: right;
+  }
+
+  .led-final {
+    border-top: 3px double var(--rule); padding-top: 13px; margin-top: 2px;
+  }
+  .led-final .l { font-size: 15px; font-weight: 700; }
+  .led-final .v { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+                  font-size: clamp(26px, 7vw, 33px); font-weight: 600; color: var(--plus-ink);
+                  text-align: right; letter-spacing: -.02em; white-space: nowrap; line-height: 1.2; }
+  .led-final .sub {
+    grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-faint); padding-top: 2px;
+  }
+  /* 狭い画面では合計額が大きく、見出しが1文字ずつ縦に潰れるため行を分ける */
+  @media (max-width: 540px) {
+    .led-sum, .led-final { grid-template-columns: minmax(0, 1fr); }
+    .led-sum .v, .led-final .v, .led-sum .pct, .led-final .sub { text-align: right; }
+    .led-final .sub { text-align: left; }
+  }
+  .led-sum .l, .led-final .l { white-space: nowrap; }
+
+  .led-note {
+    font-size: 13px; color: var(--ink-faint); line-height: 1.75;
+    border-top: 1px dashed var(--rule); padding-top: 13px;
+  }
+  .led-note b { color: var(--ink-soft); }
+
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
   .tile {
     background: var(--surface); border: 1px solid var(--rule); border-radius: 5px;
@@ -313,22 +380,61 @@
   </div>
 
   <!-- ===================== 見出し数字 ===================== -->
-  <div class="tiles">
-    <div class="tile t-real">
-      <div class="k">世帯に入ってくる総額（会社負担・手当ふくむ）</div>
-      <div class="v num" id="hReal">¥0</div>
-      <div class="s" id="hRealSub">月あたり ¥0</div>
+  <div class="ledger">
+
+    <div class="led-group">
+      <div class="led-head"><span class="led-dot in"></span>本当の年収</div>
+      <div class="led-row">
+        <span class="l">額面の世帯年収<em>源泉徴収票の「支払金額」にあたる額</em></span>
+        <span class="v num" id="lGross">¥0</span>
+      </div>
+      <div class="led-row">
+        <span class="l">＋ 会社が払った社会保険料<em>給与明細に載らない。あなたを雇うために会社が出している額</em></span>
+        <span class="v num" id="lCompany">¥0</span>
+      </div>
+      <div class="led-sum income">
+        <span class="l">本当の年収</span>
+        <span class="v num" id="lReal">¥0</span>
+        <span class="pct num" id="lRealDay"></span>
+      </div>
     </div>
-    <div class="tile t-tax">
-      <div class="k">1年で国・自治体に納めた合計</div>
-      <div class="v num" id="hTax">¥0</div>
-      <div class="s" id="hTaxSub">本来の年収の 0%</div>
+
+    <div class="led-group">
+      <div class="led-head"><span class="led-dot out"></span>国・自治体へ</div>
+      <div class="led-row">
+        <span class="l">− 税金<em>所得税・住民税・消費税・自動車税・重量税・ガソリン税など</em></span>
+        <span class="v num" id="lTax">¥0</span>
+      </div>
+      <div class="led-row">
+        <span class="l">− 社会保険料<em>本人負担＋会社負担。健康保険・介護・年金・雇用・労災</em></span>
+        <span class="v num" id="lSocial">¥0</span>
+      </div>
+      <div class="led-row">
+        <span class="l">− 賦課金<em>再生可能エネルギー発電促進賦課金</em></span>
+        <span class="v num" id="lLevy">¥0</span>
+      </div>
+      <div class="led-sum out">
+        <span class="l">差引 国へ</span>
+        <span class="v num" id="lState">¥0</span>
+        <span class="pct num" id="lStatePct"></span>
+      </div>
     </div>
-    <div class="tile t-left">
-      <div class="k">1年で手元に残るお金</div>
-      <div class="v num" id="hLeft">¥0</div>
-      <div class="s" id="hLeftSub">月あたり ¥0</div>
+
+    <div class="led-group">
+      <div class="led-head"><span class="led-dot live"></span>生活へ</div>
+      <div class="led-row">
+        <span class="l">− 生活費（税を除く）<em>家賃・食費・日用品・光熱水費・通信・保険・車</em></span>
+        <span class="v num" id="lSpend">¥0</span>
+      </div>
     </div>
+
+    <div class="led-final">
+      <span class="l">手元に残るお金</span>
+      <span class="v num" id="lLeft">¥0</span>
+      <span class="sub" id="lLeftSub"></span>
+    </div>
+
+    <div class="led-note" id="lNote"></div>
   </div>
 
   <div class="barwrap">
@@ -1131,25 +1237,59 @@
       sub("小計", teate);
     }
 
+    // 表示は必ず1円まで合わせる。足し算が合わない資料は信用されない。
+    tax = Math.round(tax); social = Math.round(social); levy = Math.round(levy);
+    spend = Math.round(spend);
+    annualCompany = Math.round(annualCompany);
+    teate = Math.round(teate);
+
+    // 上の表は給料だけで計算する。児童手当は働いて得た収入ではないので
+    // 年収にも「残るお金」にも混ぜず、下のレシートに別枠で載せる。
     var toState = tax + social + levy;
-    var income = realAnnual + teate;                 // 世帯に入ってくる総額
-    var left = income - toState - spend;
-    var pct = income > 0 ? (toState / income * 100) : 0;
-    var netState = toState - teate;                  // 差引で国に渡した額
+    var income = realAnnual;                          // 本当の年収（額面＋会社負担）
+    var left = realAnnual - toState - spend;
+    var pct = realAnnual > 0 ? (toState / realAnnual * 100) : 0;
+    var leftWithTeate = left + teate;                 // 児童手当を足した場合
 
     render();
 
-    $("hReal").textContent = yen(income);
-    $("hRealSub").textContent = "1日あたり " + yen(income / 365) + "　／　月あたり " + yen(income / 12) +
-      "（会社が払う総額 " + yen(realAnnual) + (teate > 0 ? " ＋ 児童手当 " + yen(teate) : "") + "）";
-    $("hTax").textContent = yen(toState);
-    $("hTaxSub").textContent = "1日あたり " + yen(toState / 365) + "　／　入ってくる総額の " + pct.toFixed(1) + "%" +
-      (teate > 0 ? "　／　児童手当を差し引くと " + yen(netState) : "");
-    $("hLeft").textContent = yen(left);
-    $("hLeftSub").textContent = left >= 0
-      ? "1日あたり " + yen(left / 365) + "　／　月あたり " + yen(left / 12) + "（生活費を払ったあと）"
-      : "1日あたり " + yen(left / 365) + " の赤字。貯金を取り崩すか、どこかを削ることになります。";
-    $("hLeft").style.color = left >= 0 ? "var(--plus-ink)" : "var(--minus)";
+    // ---- 帳簿の各行 ----
+    // 「本当の年収」＝ 額面 ＋ 会社負担。統計でいう人件費（労働費用）にあたる。
+    // 児童手当は働いて得た収入ではないので、年収ではなく「戻ってくるお金」に置く。
+    $("lGross").textContent   = yen(annualGross);
+    $("lCompany").textContent = "＋ " + yen(annualCompany);
+    $("lReal").textContent    = yen(realAnnual);
+    $("lRealDay").textContent = "1日あたり " + yen(realAnnual / 365) +
+                                "　／　月あたり " + yen(realAnnual / 12);
+
+    $("lTax").textContent    = "− " + yen(tax);
+    $("lSocial").textContent = "− " + yen(social);
+    $("lLevy").textContent   = "− " + yen(levy);
+    $("lState").textContent  = yen(toState);
+    $("lStatePct").textContent =
+      "本当の年収の " + pct.toFixed(1) + "%　／　1日あたり " + yen(toState / 365);
+
+    $("lSpend").textContent = "− " + yen(spend);
+
+    $("lLeft").textContent = yen(left);
+    $("lLeft").style.color = left >= 0 ? "var(--plus-ink)" : "var(--minus)";
+    $("lLeftSub").textContent = left >= 0
+      ? "1日あたり " + yen(left / 365) + "　／　月あたり " + yen(left / 12) + "（貯金や投資に回せる分）"
+      : "月あたり " + yen(Math.abs(left) / 12) + " の赤字。貯金を取り崩すか、どこかを削ることになります。";
+
+    var note = "";
+    if (annualCompany > 0) {
+      note += "<b>会社が払った社会保険料 " + yen(annualCompany) + " は、入ってきてそのまま「国・自治体へ」に出ていきます。</b>" +
+              "通帳には入りませんが、あなたを雇うために実際に動いているお金です。" +
+              "この制度がなければ、その分は給料に乗っていたはずの額なので、年収に足しています。";
+    }
+    if (teate > 0) {
+      note += (note ? "<br>" : "") +
+              "<b>この表は給料だけで計算しています。</b>児童手当 " + yen(teate) +
+              " は働いて得た収入ではないので年収に混ぜず、下のレシートに別に載せています。" +
+              "足すと手元に残るのは " + yen(leftWithTeate) + " になります。";
+    }
+    $("lNote").innerHTML = note;
 
     var bar = $("hBar");
     bar.textContent = "";
@@ -1165,10 +1305,10 @@
     $("rMeta").textContent = TODAY + " 時点の税率で計算した概算";
     $("rFine").textContent =
       "国・自治体へ " + yen(toState) + "（税 " + yen(tax) + "／社会保険料 " + yen(social) +
-      "／賦課金 " + yen(levy) + "）。" + (teate > 0 ? "児童手当 " + yen(teate) + " が戻り、差引 " + yen(netState) + "。" : "") +
-      "生活費（税を除く）" + yen(spend) + "。残り " + yen(left) + "。" +
+      "／賦課金 " + yen(levy) + "）。" + (teate > 0 ? "別枠で児童手当 " + yen(teate) + " が戻ります。" : "") +
+      "生活費（税を除く）" + yen(spend) + "。給料だけで見た残りは " + yen(left) + "。" +
       "社会保険料は税ではありませんが、断ることができない負担なので合計に入れています。" +
-      "会社負担分と児童手当を含めた「世帯に入ってくる総額」を分母にしています。";
+      "会社負担分を含めた「本当の年収」を分母にしています。";
 
     var days = Math.max(0, Math.min(365, Math.round(pct / 100 * 365)));
     $("fDays").textContent = days;
