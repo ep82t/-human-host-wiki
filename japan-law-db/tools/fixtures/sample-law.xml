@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Law Era="Showa" Lang="ja" LawType="Act" Num="33" Year="40" PromulgateMonth="03" PromulgateDay="31">
+  <LawNum>昭和四十年法律第三十三号</LawNum>
+  <LawBody>
+    <LawTitle Kana="しょとくぜいほう" Abbrev="所得税">所得税法</LawTitle>
+    <TOC>
+      <TOCLabel>目次</TOCLabel>
+      <TOCPart Num="1">
+        <PartTitle>第一編　総則</PartTitle>
+      </TOCPart>
+    </TOC>
+    <MainProvision>
+      <Part Num="1">
+        <PartTitle>第一編　総則</PartTitle>
+        <Chapter Num="1">
+          <ChapterTitle>第一章　通則</ChapterTitle>
+          <Article Num="1">
+            <ArticleCaption>（趣旨）</ArticleCaption>
+            <ArticleTitle>第一条</ArticleTitle>
+            <Paragraph Num="1">
+              <ParagraphNum/>
+              <ParagraphSentence>
+                <Sentence Num="1" WritingMode="vertical">この法律は、所得税について、納税義務者、課税所得の範囲、税額の計算の方法、申告、納付及び還付の手続、源泉徴収並びにその納税義務の適正な履行を確保するため必要な事項を定めるものとする。</Sentence>
+              </ParagraphSentence>
+            </Paragraph>
+          </Article>
+          <Article Num="2">
+            <ArticleCaption>（定義）</ArticleCaption>
+            <ArticleTitle>第二条</ArticleTitle>
+            <Paragraph Num="1">
+              <ParagraphNum/>
+              <ParagraphSentence>
+                <Sentence Num="1">この法律において、次の各号に掲げる用語の意義は、当該各号に定めるところによる。</Sentence>
+              </ParagraphSentence>
+              <Item Num="1">
+                <ItemTitle>一</ItemTitle>
+                <ItemSentence>
+                  <Column Num="1"><Sentence>国内</Sentence></Column>
+                  <Column Num="2"><Sentence>この法律の施行地をいう。</Sentence></Column>
+                </ItemSentence>
+              </Item>
+              <Item Num="2">
+                <ItemTitle>二</ItemTitle>
+                <ItemSentence>
+                  <Column Num="1"><Sentence>国外</Sentence></Column>
+                  <Column Num="2"><Sentence>この法律の施行地外の地域をいう。</Sentence></Column>
+                </ItemSentence>
+                <Subitem1 Num="1">
+                  <Subitem1Title>イ</Subitem1Title>
+                  <Subitem1Sentence>
+                    <Sentence>細目の例を示す。</Sentence>
+                  </Subitem1Sentence>
+                </Subitem1>
+              </Item>
+            </Paragraph>
+            <Paragraph Num="2">
+              <ParagraphNum>2</ParagraphNum>
+              <ParagraphSentence>
+                <Sentence Num="1" Function="main">前項に規定するもののほか、必要な事項は政令で定める。</Sentence>
+                <Sentence Num="2" Function="proviso">ただし、特別の定めがある場合は、この限りでない。</Sentence>
+              </ParagraphSentence>
+            </Paragraph>
+          </Article>
+        </Chapter>
+        <Chapter Num="2">
+          <ChapterTitle>第二章　納税義務者</ChapterTitle>
+          <Section Num="1">
+            <SectionTitle>第一節　通則</SectionTitle>
+            <Article Num="5">
+              <ArticleCaption>（納税義務者）</ArticleCaption>
+              <ArticleTitle>第五条</ArticleTitle>
+              <Paragraph Num="1">
+                <ParagraphNum/>
+                <ParagraphSentence>
+                  <Sentence>居住者は、この法律により、所得税を納める義務がある。</Sentence>
+                </ParagraphSentence>
+              </Paragraph>
+            </Article>
+          </Section>
+        </Chapter>
+      </Part>
+    </MainProvision>
+    <SupplProvision Type="New" AmendLawNum="昭和四十年法律第三十三号">
+      <SupplProvisionLabel>附　則</SupplProvisionLabel>
+      <Article Num="1">
+        <ArticleTitle>第一条</ArticleTitle>
+        <Paragraph Num="1">
+          <ParagraphNum/>
+          <ParagraphSentence>
+            <Sentence>この法律は、昭和四十一年一月一日から施行する。</Sentence>
+          </ParagraphSentence>
+        </Paragraph>
+      </Article>
+    </SupplProvision>
+    <AppdxTable Num="1">
+      <AppdxTableTitle>別表第一（第九条関係）</AppdxTableTitle>
+      <TableStruct>
+        <Table>
+          <TableRow>
+            <TableColumn><Sentence>名称</Sentence></TableColumn>
+            <TableColumn><Sentence>内容</Sentence></TableColumn>
+          </TableRow>
+          <TableRow>
+            <TableColumn><Sentence>例示</Sentence></TableColumn>
+            <TableColumn><Sentence>説明文</Sentence></TableColumn>
+          </TableRow>
+        </Table>
+      </TableStruct>
+    </AppdxTable>
+  </LawBody>
+</Law>
