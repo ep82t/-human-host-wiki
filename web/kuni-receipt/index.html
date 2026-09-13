@@ -46,6 +46,13 @@
     --levy:      #7D5810;
     --levy-soft: #F8F0DC;
     --spend:     #3F576B;
+    /* グラフ専用の5色。5つを並べたときに見分けられるかを検証して決めた値。
+       明度・彩度・色覚特性での識別距離・背景とのコントラストをすべて満たす。 */
+    --c-tax:    #BF3B2B;
+    --c-social: #7A4FB0;
+    --c-levy:   #A8720A;
+    --c-spend:  #1F66B0;
+    --c-left:   #2C7A4B;
     --shadow: 0 1px 2px rgba(19,28,36,.06), 0 12px 30px -22px rgba(19,28,36,.5);
     --paper-shadow: 0 1px 2px rgba(19,28,36,.08), 0 18px 40px -26px rgba(19,28,36,.7);
   }
@@ -60,6 +67,10 @@
       --hidden: #BCA2DE; --hidden-soft:#241C33;
       --levy: #DCB367; --levy-soft: #2C2414;
       --spend: #9FB3C4;
+    --c-tax: #D25F4E; --c-social: #9A7BD0; --c-levy: #BE8B20;
+    --c-spend: #4A8FD4; --c-left: #45A876;
+      --c-tax: #D25F4E; --c-social: #9A7BD0; --c-levy: #BE8B20;
+      --c-spend: #4A8FD4; --c-left: #45A876;
       --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 30px -22px rgba(0,0,0,1);
       --paper-shadow: 0 1px 2px rgba(0,0,0,.6), 0 18px 40px -26px rgba(0,0,0,1);
     }
@@ -74,6 +85,8 @@
     --hidden: #BCA2DE; --hidden-soft:#241C33;
     --levy: #DCB367; --levy-soft: #2C2414;
     --spend: #9FB3C4;
+    --c-tax: #D25F4E; --c-social: #9A7BD0; --c-levy: #BE8B20;
+    --c-spend: #4A8FD4; --c-left: #45A876;
     --shadow: 0 1px 2px rgba(0,0,0,.5), 0 12px 30px -22px rgba(0,0,0,1);
     --paper-shadow: 0 1px 2px rgba(0,0,0,.6), 0 18px 40px -26px rgba(0,0,0,1);
   }
@@ -136,8 +149,8 @@
   }
   .led-dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
   .led-dot.in   { background: var(--accent); }
-  .led-dot.out  { background: var(--minus); }
-  .led-dot.live { background: var(--spend); }
+  .led-dot.out  { background: var(--c-tax); }
+  .led-dot.live { background: var(--c-spend); }
 
   .led-row, .led-sum, .led-final {
     display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px;
@@ -206,10 +219,20 @@
 
   .barwrap { background: var(--surface); border: 1px solid var(--rule); border-radius: 5px; box-shadow: var(--shadow); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
   .barwrap .k { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; color: var(--ink-soft); }
-  .bar { display: flex; height: 22px; border-radius: 3px; overflow: hidden; background: var(--sub); }
-  .bar > span { display: block; }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink-soft); }
-  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  /* 区切りは線ではなく背景色の隙間で作る。細い帯でも色の境目が読み取れる。 */
+  .bar { display: flex; gap: 2px; height: 26px; background: var(--sub); border-radius: 4px; overflow: hidden; }
+  .bar > span { display: block; min-width: 3px; flex: 0 1 auto; }
+  .bar > span:first-child { border-radius: 4px 0 0 4px; }
+  .bar > span:last-child  { border-radius: 0 4px 4px 0; }
+
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 8px 18px; font-size: 13px; }
+  .legend .item { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+  .legend i { display: block; width: 11px; height: 11px; border-radius: 2px; flex: none; transform: translateY(1px); }
+  .legend .nm { color: var(--ink-soft); white-space: nowrap; }
+  .legend .pc {
+    margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+    font-weight: 600; color: var(--ink); white-space: nowrap;
+  }
 
   /* ---------- 入力 ---------- */
   .cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
@@ -438,15 +461,9 @@
   </div>
 
   <div class="barwrap">
-    <div class="k">入ってくるお金が、どこへ消えているか</div>
+    <div class="k">本当の年収が、どこへ消えているか</div>
     <div class="bar" id="hBar"></div>
-    <div class="legend">
-      <span><i style="background:var(--minus)"></i>税</span>
-      <span><i style="background:var(--hidden)"></i>社会保険料（会社負担ふくむ）</span>
-      <span><i style="background:var(--levy)"></i>賦課金</span>
-      <span><i style="background:var(--spend)"></i>生活費（税を除く）</span>
-      <span><i style="background:var(--plus-ink)"></i>残るお金</span>
-    </div>
+    <div class="legend" id="hLegend"></div>
   </div>
 
   <div class="caution">
@@ -1291,15 +1308,32 @@
     }
     $("lNote").innerHTML = note;
 
-    var bar = $("hBar");
-    bar.textContent = "";
-    [[tax,"var(--minus)"],[social,"var(--hidden)"],[levy,"var(--levy)"],
-     [spend,"var(--spend)"],[Math.max(0,left),"var(--plus-ink)"]].forEach(function (seg) {
-      if (seg[0] <= 0 || income <= 0) { return; }
-      var s = document.createElement("span");
-      s.style.width = (seg[0] / income * 100) + "%";
-      s.style.background = seg[1];
-      bar.appendChild(s);
+    var segs = [
+      ["税",         tax,               "var(--c-tax)"],
+      ["社会保険料",  social,            "var(--c-social)"],
+      ["賦課金",      levy,              "var(--c-levy)"],
+      ["生活費",      spend,             "var(--c-spend)"],
+      ["残るお金",    Math.max(0, left), "var(--c-left)"]
+    ];
+    var bar = $("hBar"), legend = $("hLegend");
+    bar.textContent = ""; legend.textContent = "";
+    segs.forEach(function (seg) {
+      if (realAnnual <= 0) { return; }
+      var share = seg[1] / realAnnual * 100;
+      if (seg[1] > 0) {
+        var s1 = document.createElement("span");
+        s1.style.width = share + "%";
+        s1.style.background = seg[2];
+        bar.appendChild(s1);
+      }
+      // 凡例には必ず割合を書く。色を見分けられなくても読めるようにするため。
+      var item = document.createElement("div");
+      item.className = "item";
+      var sw = document.createElement("i"); sw.style.background = seg[2];
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = seg[0];
+      var pc = document.createElement("span"); pc.className = "pc"; pc.textContent = share.toFixed(1) + "%";
+      item.appendChild(sw); item.appendChild(nm); item.appendChild(pc);
+      legend.appendChild(item);
     });
 
     $("rMeta").textContent = TODAY + " 時点の税率で計算した概算";
